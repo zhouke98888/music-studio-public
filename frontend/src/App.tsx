@@ -8,6 +8,10 @@ import Layout from './components/layout/Layout';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Dashboard from './pages/Dashboard';
+import LessonsPage from './pages/Lessons';
+import InstrumentsPage from './pages/Instruments';
+import InvoicesPage from './pages/Invoices';
+import StudentsPage from './pages/Students';
 
 const theme = createTheme({
   palette: {
@@ -40,35 +44,34 @@ function App() {
               </ProtectedRoute>
             } />
             
-            {/* Placeholder routes - to be implemented */}
             <Route path="/lessons" element={
               <ProtectedRoute>
                 <Layout>
-                  <div>Lessons page coming soon...</div>
+                  <LessonsPage />
                 </Layout>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/instruments" element={
               <ProtectedRoute>
                 <Layout>
-                  <div>Instruments page coming soon...</div>
+                  <InstrumentsPage />
                 </Layout>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/invoices" element={
               <ProtectedRoute>
                 <Layout>
-                  <div>Invoices page coming soon...</div>
+                  <InvoicesPage />
                 </Layout>
               </ProtectedRoute>
             } />
-            
+
             <Route path="/students" element={
               <ProtectedRoute requiredRole={['teacher', 'admin']}>
                 <Layout>
-                  <div>Students management page coming soon...</div>
+                  <StudentsPage />
                 </Layout>
               </ProtectedRoute>
             } />
