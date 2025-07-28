@@ -7,6 +7,8 @@ import connectDB from './config/database';
 import authRoutes from './routes/auth';
 import lessonRoutes from './routes/lessons';
 import instrumentRoutes from './routes/instruments';
+import invoiceRoutes from './routes/invoices';
+import studentRoutes from './routes/students';
 
 // Load environment variables
 dotenv.config();
@@ -30,6 +32,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/instruments', instrumentRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use('/api/students', studentRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
