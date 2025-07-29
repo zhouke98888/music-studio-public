@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { IUser } from './User';
+import { IUser, User } from './User';
 
 export interface ITeacherAvailability {
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
@@ -49,4 +49,4 @@ const TeacherSchema = new Schema<ITeacher>({
   discriminatorKey: 'role'
 });
 
-export const Teacher = mongoose.model<ITeacher>('Teacher', TeacherSchema);
+export const Teacher = User.discriminator<ITeacher>('Teacher', TeacherSchema, 'teacher');

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { ITeacher } from './Teacher';
-import { IUser } from './User';
+import { IUser, User } from './User';
 
 export interface IStudent extends IUser {
   role: 'student';
@@ -65,4 +65,4 @@ const StudentSchema = new Schema<IStudent>({
   discriminatorKey: 'role'
 });
 
-export const Student = mongoose.model<IStudent>('Student', StudentSchema);
+export const Student = User.discriminator<IStudent>('Student', StudentSchema, 'student');
