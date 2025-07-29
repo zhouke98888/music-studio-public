@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { ITeacher } from './Teacher';
 import { IUser } from './User';
 
 export interface IStudent extends IUser {
@@ -12,6 +13,7 @@ export interface IStudent extends IUser {
   fatherName?: string;
   fatherPhone?: string;
   isGraduated: boolean;
+  teacher?: mongoose.Types.ObjectId | ITeacher;
 }
 
 const StudentSchema = new Schema<IStudent>({
@@ -53,6 +55,10 @@ const StudentSchema = new Schema<IStudent>({
   isGraduated: {
     type: Boolean,
     default: false
+  },
+  teacher: {
+    type: Schema.Types.ObjectId,
+    ref: 'Teacher'
   }
 }, {
   timestamps: true,

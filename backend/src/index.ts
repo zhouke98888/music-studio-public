@@ -9,6 +9,7 @@ import lessonRoutes from './routes/lessons';
 import instrumentRoutes from './routes/instruments';
 import invoiceRoutes from './routes/invoices';
 import studentRoutes from './routes/students';
+import teacherRoutes from './routes/teachers';
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,7 @@ app.use('/api/lessons', lessonRoutes);
 app.use('/api/instruments', instrumentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/teachers', teacherRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Student, IStudent } from '../models/Student';
+import { Teacher } from '../models/Teacher';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 
@@ -34,6 +35,7 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
     
     const students = await Student.find(query)
       .select('-password')
+      .populate('teacher', 'firstName lastName email')
       .sort({ firstName: 1, lastName: 1 });
     
     res.json(students);
@@ -46,7 +48,9 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
 // Get student by ID
 export const getStudentById = async (req: AuthRequest, res: Response) => {
   try {
-    const student = await Student.findById(req.params.id).select('-password');
+    const student = await Student.findById(req.params.id)
+      .select('-password')
+      .populate('teacher', 'firstName lastName email');
     
     if (!student) {
       return res.status(404).json({ message: 'Student not found' });
@@ -75,7 +79,8 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       motherName,
       motherPhone,
       fatherName,
-      fatherPhone
+      fatherPhone,
+      teacher: teacherId
     } = req.body;
 
     // Check if user already exists
@@ -105,10 +110,15 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       motherPhone,
       fatherName,
       fatherPhone,
-      isGraduated: false
+      isGraduated: false,
+      teacher: teacherId
     });
 
     await student.save();
+
+    if (teacherId) {
+      await Teacher.findByIdAndUpdate(teacherId, { $addToSet: { students: student._id } });
+    }
 
     // Return student without password
     const studentResponse = await Student.findById(student._id).select('-password');
@@ -200,6 +210,43 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'Student deleted successfully' });
   } catch (error) {
     console.error('Error deleting student:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const assignTeacher = async (req: AuthRequest, res: Response) => {
+  try {
+    const { teacherId } = req.body;
+    const studentId = req.params.id;
+
+    const student = await Student.findById(studentId);
+    const teacher = await Teacher.findById(teacherId);
+
+    if (!student || !teacher) {
+      return res.status(404).json({ message: 'Student or teacher not found' });
+    }
+
+    if (student.teacher && student.teacher.toString() !== teacherId) {
+      await Teacher.findByIdAndUpdate(student.teacher, {
+        $pull: { students: student._id }
+      });
+    }
+
+    student.teacher = teacher._id;
+    await student.save();
+
+    if (!teacher.students.some(id => id.toString() === student._id.toString())) {
+      teacher.students.push(student._id);
+      await teacher.save();
+    }
+
+    const populated = await Student.findById(student._id)
+      .select('-password')
+      .populate('teacher', 'firstName lastName email');
+
+    res.json(populated);
+  } catch (error) {
+    console.error('Error assigning teacher:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

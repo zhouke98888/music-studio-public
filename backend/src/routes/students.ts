@@ -6,7 +6,8 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
-  getStudentStats
+  getStudentStats,
+  assignTeacher
 } from '../controllers/studentController';
 
 const router = express.Router();
@@ -25,6 +26,9 @@ router.get('/:id', requireRole(['teacher', 'admin']), getStudentById);
 
 // Create new student (teachers and admins only)
 router.post('/', requireRole(['teacher', 'admin']), createStudent);
+
+// Assign teacher to student (teachers and admins only)
+router.post('/:id/assign-teacher', requireRole(['teacher', 'admin']), assignTeacher);
 
 // Update student (teachers and admins only)
 router.put('/:id', requireRole(['teacher', 'admin']), updateStudent);
