@@ -11,8 +11,7 @@ import {
   Student
 } from '../types';
 
-// const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 // Create axios instance
 const api = axios.create({
@@ -160,10 +159,58 @@ export const instrumentsAPI = {
   },
 };
 
+// Students API
+export const studentsAPI = {
+  getStudents: async (params?: {
+    search?: string;
+    grade?: string;
+    school?: string;
+    isGraduated?: boolean;
+  }): Promise<Student[]> => {
+    const response: AxiosResponse<ApiResponse<Student[]>> = await api.get('/students', { params });
+    return response.data.data!;
+  },
+
+  getStudentById: async (id: string): Promise<Student> => {
+    const response: AxiosResponse<ApiResponse<Student>> = await api.get(`/students/${id}`);
+    return response.data.data!;
+  },
+
+  createStudent: async (studentData: any): Promise<Student> => {
+    const response: AxiosResponse<ApiResponse<Student>> = await api.post('/students', studentData);
+    return response.data.data!;
+  },
+
+  updateStudent: async (id: string, studentData: any): Promise<Student> => {
+    const response: AxiosResponse<ApiResponse<Student>> = await api.put(`/students/${id}`, studentData);
+    return response.data.data!;
+  },
+
+  deleteStudent: async (id: string): Promise<void> => {
+    await api.delete(`/students/${id}`);
+  },
+
+  getStudentStats: async (): Promise<{
+    totalStudents: number;
+    activeStudents: number;
+    graduatedStudents: number;
+    gradeDistribution: Array<{ _id: string; count: number }>;
+    schoolDistribution: Array<{ _id: string; count: number }>;
+  }> => {
+    const response: AxiosResponse<ApiResponse<any>> = await api.get('/students/stats');
+    return response.data.data!;
+  },
+};
+
 // Invoices API
 export const invoicesAPI = {
-  getInvoices: async (): Promise<Invoice[]> => {
-    const response: AxiosResponse<ApiResponse<Invoice[]>> = await api.get('/invoices');
+  getInvoices: async (params?: {
+    status?: string;
+    month?: number;
+    year?: number;
+    student?: string;
+  }): Promise<Invoice[]> => {
+    const response: AxiosResponse<ApiResponse<Invoice[]>> = await api.get('/invoices', { params });
     return response.data.data!;
   },
 
@@ -185,32 +232,15 @@ export const invoicesAPI = {
   deleteInvoice: async (id: string): Promise<void> => {
     await api.delete(`/invoices/${id}`);
   },
-};
 
-// Students API (for teachers)
-export const studentsAPI = {
-  getStudents: async (): Promise<Student[]> => {
-    const response: AxiosResponse<ApiResponse<Student[]>> = await api.get('/students');
+  markInvoicePaid: async (id: string): Promise<Invoice> => {
+    const response: AxiosResponse<ApiResponse<Invoice>> = await api.post(`/invoices/${id}/mark-paid`);
     return response.data.data!;
   },
 
-  getStudentById: async (id: string): Promise<Student> => {
-    const response: AxiosResponse<ApiResponse<Student>> = await api.get(`/students/${id}`);
+  generateMonthlyInvoices: async (data: { month: number; year: number }): Promise<Invoice[]> => {
+    const response: AxiosResponse<ApiResponse<Invoice[]>> = await api.post('/invoices/generate-monthly', data);
     return response.data.data!;
-  },
-
-  createStudent: async (studentData: any): Promise<Student> => {
-    const response: AxiosResponse<ApiResponse<Student>> = await api.post('/students', studentData);
-    return response.data.data!;
-  },
-
-  updateStudent: async (id: string, studentData: any): Promise<Student> => {
-    const response: AxiosResponse<ApiResponse<Student>> = await api.put(`/students/${id}`, studentData);
-    return response.data.data!;
-  },
-
-  deleteStudent: async (id: string): Promise<void> => {
-    await api.delete(`/students/${id}`);
   },
 };
 

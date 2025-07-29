@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { User } from './User';
+import { IUser } from './User';
 
 export interface ITeacherAvailability {
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
@@ -7,7 +7,7 @@ export interface ITeacherAvailability {
   endTime: string; // HH:mm format
 }
 
-export interface ITeacher {
+export interface ITeacher extends IUser {
   role: 'teacher';
   specializations: string[];
   availability: ITeacherAvailability[];
@@ -44,6 +44,4 @@ const TeacherSchema = new Schema<ITeacher>({
   discriminatorKey: 'role'
 });
 
-// export const Teacher = mongoose.model<ITeacher>('Teacher', TeacherSchema);
-// Create the discriminator based on the base User model
-export const Teacher = User.discriminator('teacher', TeacherSchema);
+export const Teacher = mongoose.model<ITeacher>('Teacher', TeacherSchema);

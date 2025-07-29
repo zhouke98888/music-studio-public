@@ -52,7 +52,7 @@ const UserSchema = new Schema<IUser>({
     sparse: true
   }
 }, {
-  timestamps: true, discriminatorKey: 'role'
+  timestamps: true
 });
 
 // Hash password before saving

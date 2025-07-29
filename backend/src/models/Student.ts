@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { User } from './User';
+import { IUser } from './User';
 
-export interface IStudent {
+export interface IStudent extends IUser {
   role: 'student';
   birthDate: Date;
   grade: string;
@@ -59,6 +59,4 @@ const StudentSchema = new Schema<IStudent>({
   discriminatorKey: 'role'
 });
 
-// export const Student = mongoose.model<IStudent>('Student', StudentSchema);
-// Create the discriminator based on the base User model
-export const Student = User.discriminator('student', StudentSchema);
+export const Student = mongoose.model<IStudent>('Student', StudentSchema);

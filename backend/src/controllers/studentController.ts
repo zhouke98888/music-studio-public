@@ -1,71 +1,252 @@
-import { Response } from 'express';
-import { Student } from '../models/Student';
+import { Request, Response } from 'express';
+import { Student, IStudent } from '../models/Student';
+import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 
+// Get all students
 export const getStudents = async (req: AuthRequest, res: Response) => {
   try {
-    const students = await Student.find().sort({ lastName: 1, firstName: 1 });
-    res.json({ success: true, data: students });
+    const { search, grade, school, isGraduated } = req.query;
+    
+    // Build query
+    const query: any = { role: 'student' };
+    
+    if (search) {
+      query.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (grade) {
+      query.grade = grade;
+    }
+    
+    if (school) {
+      query.school = { $regex: school, $options: 'i' };
+    }
+    
+    if (isGraduated !== undefined) {
+      query.isGraduated = isGraduated === 'true';
+    }
+    
+    const students = await Student.find(query)
+      .select('-password')
+      .sort({ firstName: 1, lastName: 1 });
+    
+    res.json(students);
   } catch (error) {
-    console.error('Get students error:', error);
-    res.status(500).json({ success: false, message: 'Server error getting students' });
+    console.error('Error fetching students:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
+// Get student by ID
 export const getStudentById = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const student = await Student.findById(id);
+    const student = await Student.findById(req.params.id).select('-password');
+    
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' });
+      return res.status(404).json({ message: 'Student not found' });
     }
-    res.json({ success: true, data: student });
+    
+    res.json(student);
   } catch (error) {
-    console.error('Get student error:', error);
-    res.status(500).json({ success: false, message: 'Server error getting student' });
+    console.error('Error fetching student:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
+// Create new student
 export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const student = new Student(req.body);
-    await student.save();
-    res.status(201).json({ success: true, data: student });
-  } catch (error: any) {
-    console.error('Create student error:', error);
-    if (error.code === 11000) {
-      res.status(400).json({ success: false, message: 'Student with this email or username already exists' });
-    } else {
-      res.status(500).json({ success: false, message: 'Server error creating student' });
+    const {
+      email,
+      username,
+      password,
+      firstName,
+      lastName,
+      birthDate,
+      grade,
+      school,
+      phone,
+      motherName,
+      motherPhone,
+      fatherName,
+      fatherPhone
+    } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }] 
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: 'User with this email or username already exists' 
+      });
     }
+
+    // Create new student
+    const student = new Student({
+      email,
+      username,
+      password,
+      firstName,
+      lastName,
+      role: 'student',
+      birthDate,
+      grade,
+      school,
+      phone,
+      motherName,
+      motherPhone,
+      fatherName,
+      fatherPhone,
+      isGraduated: false
+    });
+
+    await student.save();
+
+    // Return student without password
+    const studentResponse = await Student.findById(student._id).select('-password');
+    res.status(201).json(studentResponse);
+  } catch (error) {
+    console.error('Error creating student:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
+// Update student
 export const updateStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const updates = req.body;
-    const student = await Student.findByIdAndUpdate(id, updates, { new: true });
+    const {
+      firstName,
+      lastName,
+      email,
+      username,
+      birthDate,
+      grade,
+      school,
+      phone,
+      motherName,
+      motherPhone,
+      fatherName,
+      fatherPhone,
+      isGraduated
+    } = req.body;
+
+    const student = await Student.findById(req.params.id);
+    
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' });
+      return res.status(404).json({ message: 'Student not found' });
     }
-    res.json({ success: true, data: student });
+
+    // Check if email or username is being changed and already exists
+    if (email && email !== student.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+    }
+
+    if (username && username !== student.username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already in use' });
+      }
+    }
+
+    // Update student fields
+    const updatedStudent = await Student.findByIdAndUpdate(
+      req.params.id,
+      {
+        firstName,
+        lastName,
+        email,
+        username,
+        birthDate,
+        grade,
+        school,
+        phone,
+        motherName,
+        motherPhone,
+        fatherName,
+        fatherPhone,
+        isGraduated
+      },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    res.json(updatedStudent);
   } catch (error) {
-    console.error('Update student error:', error);
-    res.status(500).json({ success: false, message: 'Server error updating student' });
+    console.error('Error updating student:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
+// Delete student
 export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
-    const student = await Student.findByIdAndDelete(id);
+    const student = await Student.findById(req.params.id);
+    
     if (!student) {
-      return res.status(404).json({ success: false, message: 'Student not found' });
+      return res.status(404).json({ message: 'Student not found' });
     }
-    res.json({ success: true, message: 'Student deleted' });
+
+    await Student.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Student deleted successfully' });
   } catch (error) {
-    console.error('Delete student error:', error);
-    res.status(500).json({ success: false, message: 'Server error deleting student' });
+    console.error('Error deleting student:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get student stats
+export const getStudentStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const totalStudents = await Student.countDocuments({ role: 'student' });
+    const graduatedStudents = await Student.countDocuments({ 
+      role: 'student', 
+      isGraduated: true 
+    });
+    const activeStudents = totalStudents - graduatedStudents;
+
+    // Get grade distribution
+    const gradeDistribution = await Student.aggregate([
+      { $match: { role: 'student', isGraduated: false } },
+      {
+        $group: {
+          _id: '$grade',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Get school distribution
+    const schoolDistribution = await Student.aggregate([
+      { $match: { role: 'student', isGraduated: false } },
+      {
+        $group: {
+          _id: '$school',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    res.json({
+      totalStudents,
+      activeStudents,
+      graduatedStudents,
+      gradeDistribution,
+      schoolDistribution
+    });
+  } catch (error) {
+    console.error('Error fetching student stats:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

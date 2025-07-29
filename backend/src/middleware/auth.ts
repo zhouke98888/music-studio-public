@@ -58,3 +58,6 @@ export const requireRole = (roles: string[]) => {
     next();
   };
 };
+
+// Export authenticate as alias for authenticateToken for backward compatibility
+export const authenticate = authenticateToken;
