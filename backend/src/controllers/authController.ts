@@ -120,18 +120,18 @@ export const login = async (req: Request, res: Response) => {
     // Try to find user in all collections
     let user: any = await User.findOne({
       $or: [{ username }, { email: username }]
-    });
+    }).select('+password');
 
     if (!user) {
       user = await Student.findOne({
         $or: [{ username }, { email: username }]
-      });
+      }).select('+password');
     }
 
     if (!user) {
       user = await Teacher.findOne({
         $or: [{ username }, { email: username }]
-      });
+      }).select('+password');
     }
 
     if (!user || !(await user.comparePassword(password))) {
