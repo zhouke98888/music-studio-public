@@ -117,12 +117,24 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
-    // Find user by username or email
-    const user = await User.findOne({
+    // Try to find user in all collections
+    let user: any = await User.findOne({
       $or: [{ username }, { email: username }]
-    });
+    }).select('+password');
 
-    if (!user || !await user.comparePassword(password)) {
+    if (!user) {
+      user = await Student.findOne({
+        $or: [{ username }, { email: username }]
+      }).select('+password');
+    }
+
+    if (!user) {
+      user = await Teacher.findOne({
+        $or: [{ username }, { email: username }]
+      }).select('+password');
+    }
+
+    if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'

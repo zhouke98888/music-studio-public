@@ -202,6 +202,14 @@ export const studentsAPI = {
   },
 };
 
+// Teachers API
+export const teachersAPI = {
+  getTeacherStudents: async (id: string): Promise<Student[]> => {
+    const response: AxiosResponse<ApiResponse<Student[]>> = await api.get(`/teachers/${id}/students`);
+    return response.data.data!;
+  },
+};
+
 // Invoices API
 export const invoicesAPI = {
   getInvoices: async (params?: {

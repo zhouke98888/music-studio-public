@@ -1,5 +1,5 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import { IUser } from './User';
+import mongoose, { Schema } from 'mongoose';
+import { IUser, UserSchema, attachUserHooks } from './User';
 
 export interface ITeacherAvailability {
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
@@ -11,6 +11,7 @@ export interface ITeacher extends IUser {
   role: 'teacher';
   specializations: string[];
   availability: ITeacherAvailability[];
+  students: mongoose.Types.ObjectId[];
 }
 
 const TeacherAvailabilitySchema = new Schema<ITeacherAvailability>({
@@ -33,15 +34,21 @@ const TeacherAvailabilitySchema = new Schema<ITeacherAvailability>({
 }, { _id: false });
 
 const TeacherSchema = new Schema<ITeacher>({
+  ...UserSchema.obj,
   specializations: [{
     type: String,
     required: true,
     trim: true
   }],
-  availability: [TeacherAvailabilitySchema]
+  availability: [TeacherAvailabilitySchema],
+  students: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Student'
+  }]
 }, {
-  timestamps: true,
-  discriminatorKey: 'role'
+  timestamps: true
 });
 
-export const Teacher = mongoose.model<ITeacher>('Teacher', TeacherSchema);
+attachUserHooks(TeacherSchema);
+
+export const Teacher = mongoose.model<ITeacher>('Teacher', TeacherSchema, 'teachers');

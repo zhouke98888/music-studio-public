@@ -39,8 +39,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
-import { lessonsAPI } from '../services/api';
-import { Lesson } from '../types';
+import { lessonsAPI, teachersAPI } from '../services/api';
+import { Lesson, Student } from '../types';
 
 const Lessons: React.FC = () => {
   const { user } = useAuth();
@@ -55,12 +55,14 @@ const Lessons: React.FC = () => {
   const [actionData, setActionData] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
 
+  const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
+
   // New lesson form data
   const [newLesson, setNewLesson] = useState({
     type: 'private' as 'private' | 'masterclass' | 'group',
     title: '',
     description: '',
-    students: [],
+    students: [] as string[],
     scheduledDate: new Date(),
     duration: 60,
     location: '',
@@ -70,6 +72,20 @@ const Lessons: React.FC = () => {
   useEffect(() => {
     loadLessons();
   }, []);
+
+  useEffect(() => {
+    const loadStudents = async () => {
+      if (user?.role === 'teacher') {
+        try {
+          const data = await teachersAPI.getTeacherStudents(user._id);
+          setAvailableStudents(data);
+        } catch (err) {
+          console.error('Failed to load students', err);
+        }
+      }
+    };
+    loadStudents();
+  }, [user]);
 
   const loadLessons = async () => {
     try {
@@ -96,7 +112,7 @@ const Lessons: React.FC = () => {
         type: 'private',
         title: '',
         description: '',
-        students: [],
+        students: [] as string[],
         scheduledDate: new Date(),
         duration: 60,
         location: '',
@@ -420,6 +436,29 @@ const Lessons: React.FC = () => {
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
+              {user?.role === 'teacher' && (
+                <Grid size={{ xs: 12}}>
+                  <FormControl fullWidth>
+                    <InputLabel>Students</InputLabel>
+                    <Select
+                      multiple
+                      label="Students"
+                      value={newLesson.students}
+                      onChange={(e) => setNewLesson({ ...newLesson, students: e.target.value as string[] })}
+                      renderValue={(selected) => (selected as string[]).map(id => {
+                        const s = availableStudents.find(stu => stu._id === id);
+                        return s ? `${s.firstName} ${s.lastName}` : id;
+                      }).join(', ')}
+                    >
+                      {availableStudents.map(stu => (
+                        <MenuItem key={stu._id} value={stu._id}>
+                          {stu.firstName} {stu.lastName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
               <Grid size={{ xs: 12}}>
                 <TextField
                   fullWidth
@@ -461,10 +500,10 @@ const Lessons: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-            <Button 
-              onClick={handleCreateLesson} 
-              variant="contained" 
-              disabled={submitting || !newLesson.title}
+            <Button
+              onClick={handleCreateLesson}
+              variant="contained"
+              disabled={submitting || !newLesson.title || newLesson.students.length === 0}
             >
               {submitting ? <CircularProgress size={20} /> : 'Create'}
             </Button>

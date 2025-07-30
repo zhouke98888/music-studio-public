@@ -1,5 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import { IUser } from './User';
+import mongoose, { Schema } from 'mongoose';
+import { ITeacher } from './Teacher';
+import { IUser, UserSchema, attachUserHooks } from './User';
 
 export interface IStudent extends IUser {
   role: 'student';
@@ -12,9 +13,11 @@ export interface IStudent extends IUser {
   fatherName?: string;
   fatherPhone?: string;
   isGraduated: boolean;
+  teacher?: mongoose.Types.ObjectId | ITeacher;
 }
 
 const StudentSchema = new Schema<IStudent>({
+  ...UserSchema.obj,
   birthDate: {
     type: Date,
     required: true
@@ -53,10 +56,15 @@ const StudentSchema = new Schema<IStudent>({
   isGraduated: {
     type: Boolean,
     default: false
+  },
+  teacher: {
+    type: Schema.Types.ObjectId,
+    ref: 'Teacher'
   }
 }, {
-  timestamps: true,
-  discriminatorKey: 'role'
+  timestamps: true
 });
 
-export const Student = mongoose.model<IStudent>('Student', StudentSchema);
+attachUserHooks(StudentSchema);
+
+export const Student = mongoose.model<IStudent>('Student', StudentSchema, 'students');

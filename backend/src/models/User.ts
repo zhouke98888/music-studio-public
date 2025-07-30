@@ -12,7 +12,7 @@ export interface IUser extends Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const UserSchema = new Schema<IUser>({
+export const UserSchema = new Schema<IUser>({
   email: {
     type: String,
     required: true,
@@ -55,23 +55,28 @@ const UserSchema = new Schema<IUser>({
   timestamps: true
 });
 
-// Hash password before saving
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('password') || !this.password) return next();
-  
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error as Error);
-  }
-});
 
-// Compare password method
-UserSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  if (!this.password) return false;
-  return bcrypt.compare(candidatePassword, this.password);
+export const attachUserHooks = (schema: Schema) => {
+  // Hash password before saving
+  schema.pre('save', async function(next) {
+    if (!this.isModified('password') || !this.password) return next();
+
+    try {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
+      next();
+    } catch (error) {
+      next(error as Error);
+    }
+  });
+
+  // Compare password method
+  schema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+    if (!this.password) return false;
+    return bcrypt.compare(candidatePassword, this.password);
+  };
 };
+
+attachUserHooks(UserSchema);
 
 export const User = mongoose.model<IUser>('User', UserSchema);

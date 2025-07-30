@@ -196,7 +196,7 @@ const StudentsPage: React.FC = () => {
   console.log('students value at render:', students);
   const filteredStudents = students?.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)??[];
 
-  if (loading && students.length === 0) {
+  if (loading && (students?.length?? 0) === 0) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />

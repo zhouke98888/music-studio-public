@@ -22,12 +22,14 @@ export interface Student extends User {
   fatherName?: string;
   fatherPhone?: string;
   isGraduated: boolean;
+  teacher?: string;
 }
 
 export interface Teacher extends User {
   role: 'teacher';
   specializations: string[];
   availability: TeacherAvailability[];
+  students: string[];
 }
 
 export interface TeacherAvailability {
