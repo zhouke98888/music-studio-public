@@ -83,6 +83,11 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       teacher: teacherId
     } = req.body;
 
+    let assignedTeacherId = teacherId;
+    if (req.user?.role === 'teacher') {
+      assignedTeacherId = req.user._id;
+    } 
+
     // Check if user already exists
     const existingUser = await User.findOne({ 
       $or: [{ email }, { username }] 
@@ -116,12 +121,19 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
 
     await student.save();
 
+    if (assignedTeacherId) {
+      await Teacher.findByIdAndUpdate(assignedTeacherId, { $addToSet: { students: student._id } });
+    }    
+    
     if (teacherId) {
       await Teacher.findByIdAndUpdate(teacherId, { $addToSet: { students: student._id } });
     }
 
     // Return student without password
-    const studentResponse = await Student.findById(student._id).select('-password');
+    const studentResponse = await Student.findById(student._id)
+      .select('-password')
+      .populate('teacher', 'firstName lastName email');
+      
     res.status(201).json(studentResponse);
   } catch (error) {
     console.error('Error creating student:', error);
