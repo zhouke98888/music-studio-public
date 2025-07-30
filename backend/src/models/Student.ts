@@ -1,7 +1,6 @@
-import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import mongoose, { Schema } from 'mongoose';
 import { ITeacher } from './Teacher';
-import { IUser, UserSchema } from './User';
+import { IUser, User } from './User';
 
 export interface IStudent extends IUser {
   role: 'student';
@@ -17,8 +16,7 @@ export interface IStudent extends IUser {
   teacher?: mongoose.Types.ObjectId | ITeacher;
 }
 
-const StudentSchema = UserSchema.clone();
-StudentSchema.add({
+const StudentSchema = new Schema<IStudent>({
   birthDate: {
     type: Date,
     required: true
@@ -62,28 +60,9 @@ StudentSchema.add({
     type: Schema.Types.ObjectId,
     ref: 'Teacher'
   }
+}, {
+  timestamps: true,
+  discriminatorKey: 'role'
 });
 
-StudentSchema.set('timestamps', true);
-StudentSchema.path('role').default('student');
-
-// Hash password before saving
-StudentSchema.pre('save', async function(next) {
-  if (!this.isModified('password') || !this.password) return next();
-
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error as Error);
-  }
-});
-
-// Compare password method
-StudentSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  if (!this.password) return false;
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-export const Student = mongoose.model<IStudent>('Student', StudentSchema);
+export const Student = User.discriminator<IStudent>('Student', StudentSchema);
