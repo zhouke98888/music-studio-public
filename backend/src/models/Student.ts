@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { ITeacher } from './Teacher';
-import { IUser, User } from './User';
+import { IUser, UserSchema, attachUserHooks } from './User';
 
 export interface IStudent extends IUser {
   role: 'student';
@@ -17,6 +17,7 @@ export interface IStudent extends IUser {
 }
 
 const StudentSchema = new Schema<IStudent>({
+  ...UserSchema.obj,
   birthDate: {
     type: Date,
     required: true
@@ -61,8 +62,9 @@ const StudentSchema = new Schema<IStudent>({
     ref: 'Teacher'
   }
 }, {
-  timestamps: true,
-  discriminatorKey: 'role'
+  timestamps: true
 });
 
-export const Student = User.discriminator<IStudent>('Student', StudentSchema);
+attachUserHooks(StudentSchema);
+
+export const Student = mongoose.model<IStudent>('Student', StudentSchema, 'students');
