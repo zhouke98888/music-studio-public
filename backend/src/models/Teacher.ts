@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { IUser, User } from './User';
+import bcrypt from 'bcryptjs';
+import { IUser, UserSchema } from './User';
 
 export interface ITeacherAvailability {
   dayOfWeek: number; // 0-6 (Sunday-Saturday)
@@ -33,7 +34,8 @@ const TeacherAvailabilitySchema = new Schema<ITeacherAvailability>({
   }
 }, { _id: false });
 
-const TeacherSchema = new Schema<ITeacher>({
+const TeacherSchema = UserSchema.clone();
+TeacherSchema.add({
   specializations: [{
     type: String,
     required: true,
@@ -44,9 +46,28 @@ const TeacherSchema = new Schema<ITeacher>({
     type: Schema.Types.ObjectId,
     ref: 'Student'
   }]
-}, {
-  timestamps: true,
-  discriminatorKey: 'role'
 });
 
-export const Teacher = User.discriminator<ITeacher>('Teacher', TeacherSchema, 'teacher');
+TeacherSchema.set('timestamps', true);
+TeacherSchema.path('role').default('teacher');
+
+// Hash password before saving
+TeacherSchema.pre('save', async function(next) {
+  if (!this.isModified('password') || !this.password) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// Compare password method
+TeacherSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
+  if (!this.password) return false;
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+export const Teacher = mongoose.model<ITeacher>('Teacher', TeacherSchema);
