@@ -10,10 +10,20 @@
     "build": "cd frontend && npm run build",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
   },
-  "keywords": ["music", "studio", "management", "lessons", "students"],
+  "keywords": [
+    "music",
+    "studio",
+    "management",
+    "lessons",
+    "students"
+  ],
   "author": "Music Studio",
   "license": "MIT",
   "devDependencies": {
+    "@types/react-big-calendar": "^1.16.2",
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "react-big-calendar": "^1.19.4"
   }
 }

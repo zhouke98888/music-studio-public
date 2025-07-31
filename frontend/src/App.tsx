@@ -9,6 +9,7 @@ import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Dashboard from './pages/Dashboard';
 import LessonsPage from './pages/Lessons';
+import CalendarPage from './pages/Calendar';
 import InstrumentsPage from './pages/Instruments';
 import InvoicesPage from './pages/Invoices';
 import StudentsPage from './pages/Students';
@@ -48,6 +49,14 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <LessonsPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/calendar" element={
+              <ProtectedRoute>
+                <Layout>
+                  <CalendarPage />
                 </Layout>
               </ProtectedRoute>
             } />

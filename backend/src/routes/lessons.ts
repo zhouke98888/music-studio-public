@@ -7,7 +7,9 @@ import {
   requestCancel,
   approveReschedule,
   approveCancel,
-  createLesson
+  createLesson,
+  updateLesson,
+  deleteLesson
 } from '../controllers/lessonController';
 import { authenticateToken, requireRole } from '../middleware/auth';
 
@@ -29,5 +31,7 @@ router.post('/:id/request-cancel', requestCancel);
 router.post('/:id/approve-reschedule', requireRole(['teacher', 'admin']), approveReschedule);
 router.post('/:id/approve-cancel', requireRole(['teacher', 'admin']), approveCancel);
 router.post('/', requireRole(['teacher', 'admin']), createLesson);
+router.put('/:id', requireRole(['teacher', 'admin']), updateLesson);
+router.delete('/:id', requireRole(['teacher', 'admin']), deleteLesson);
 
 export default router;

@@ -21,3 +21,7 @@ Content-Type: application/json
 "username": "ken", 
 "password": "1234"
 }
+
+### Get students
+GET http://localhost:5001/api/students
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODg2M2U2MDkwMTI3MjI2NzI5MjEzNTMiLCJpYXQiOjE3NTM5ODQ2NTksImV4cCI6MTc1NDU4OTQ1OX0.cLglk6kjC2UDHQO1GOoJr3oc6yP1MyMlorJWfPP_YSc

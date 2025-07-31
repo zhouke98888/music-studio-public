@@ -111,6 +111,15 @@ export const lessonsAPI = {
     const response: AxiosResponse<ApiResponse<Lesson>> = await api.post('/lessons', lessonData);
     return response.data.data!;
   },
+
+  updateLesson: async (id: string, lessonData: any): Promise<Lesson> => {
+    const response: AxiosResponse<ApiResponse<Lesson>> = await api.put(`/lessons/${id}`, lessonData);
+    return response.data.data!;
+  },
+
+  deleteLesson: async (id: string): Promise<void> => {
+    await api.delete(`/lessons/${id}`);
+  },
 };
 
 // Instruments API

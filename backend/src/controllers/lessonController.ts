@@ -365,3 +365,64 @@ export const createLesson = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+export const updateLesson = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    const userId = req.user._id;
+
+    const lesson = await Lesson.findById(id);
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    if (lesson.teacher.toString() !== userId.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only the assigned teacher can update this lesson' });
+    }
+
+    const allowedFields = ['title', 'description', 'students', 'scheduledDate', 'duration', 'location', 'notes', 'status'];
+    allowedFields.forEach(field => {
+      if (updates[field] !== undefined) {
+        (lesson as any)[field] = updates[field];
+      }
+    });
+
+    await lesson.save();
+
+    const populated = await lesson.populate([
+      { path: 'teacher', select: 'firstName lastName email' },
+      { path: 'students', select: 'firstName lastName email' }
+    ]);
+
+    res.json({ success: true, data: populated, message: 'Lesson updated successfully' });
+  } catch (error) {
+    console.error('Update lesson error:', error);
+    res.status(500).json({ success: false, message: 'Server error updating lesson' });
+  }
+};
+
+export const deleteLesson = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const lesson = await Lesson.findById(id);
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, message: 'Lesson not found' });
+    }
+
+    if (lesson.teacher.toString() !== userId.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only the assigned teacher can delete this lesson' });
+    }
+
+    await Lesson.findByIdAndDelete(id);
+
+    res.json({ success: true, message: 'Lesson deleted successfully' });
+  } catch (error) {
+    console.error('Delete lesson error:', error);
+    res.status(500).json({ success: false, message: 'Server error deleting lesson' });
+  }
+};
