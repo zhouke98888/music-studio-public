@@ -11,6 +11,11 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
     
     // Build query
     const query: any = { role: 'student' };
+
+    // Restrict to the current teacher's students when a teacher is requesting
+    if (req.user?.role === 'teacher') {
+      query.teacher = req.user._id;
+    }
     
     if (search) {
       query.$or = [
@@ -262,16 +267,21 @@ export const assignTeacher = async (req: AuthRequest, res: Response) => {
 // Get student stats
 export const getStudentStats = async (req: AuthRequest, res: Response) => {
   try {
-    const totalStudents = await Student.countDocuments({ role: 'student' });
-    const graduatedStudents = await Student.countDocuments({ 
-      role: 'student', 
-      isGraduated: true 
+    const matchFilter: any = { role: 'student' };
+    if (req.user?.role === 'teacher') {
+      matchFilter.teacher = req.user._id;
+    }
+
+    const totalStudents = await Student.countDocuments(matchFilter);
+    const graduatedStudents = await Student.countDocuments({
+      ...matchFilter,
+      isGraduated: true
     });
     const activeStudents = totalStudents - graduatedStudents;
 
     // Get grade distribution
     const gradeDistribution = await Student.aggregate([
-      { $match: { role: 'student', isGraduated: false } },
+      { $match: { ...matchFilter, isGraduated: false } },
       {
         $group: {
           _id: '$grade',
@@ -283,7 +293,7 @@ export const getStudentStats = async (req: AuthRequest, res: Response) => {
 
     // Get school distribution
     const schoolDistribution = await Student.aggregate([
-      { $match: { role: 'student', isGraduated: false } },
+      { $match: { ...matchFilter, isGraduated: false } },
       {
         $group: {
           _id: '$school',
