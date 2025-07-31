@@ -42,7 +42,7 @@ const TeacherSchema = new Schema<ITeacher>({
   availability: [TeacherAvailabilitySchema],
   students: [{
     type: Schema.Types.ObjectId,
-    ref: 'Student'
+    ref: 'User'
   }]
 }, {
   timestamps: true

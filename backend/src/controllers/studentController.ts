@@ -11,6 +11,11 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
     
     // Build query
     const query: any = { role: 'student' };
+
+    // Restrict to the current teacher's students when a teacher is requesting
+    if (req.user?.role === 'teacher') {
+      query.teacher = req.user._id;
+    }
     
     if (search) {
       query.$or = [
@@ -37,8 +42,11 @@ export const getStudents = async (req: AuthRequest, res: Response) => {
       .select('-password')
       .populate('teacher', 'firstName lastName email')
       .sort({ firstName: 1, lastName: 1 });
-    
-    res.json(students);
+
+    res.json({
+      success: true,
+      data: students
+    });
   } catch (error) {
     console.error('Error fetching students:', error);
     res.status(500).json({ message: 'Server error' });
@@ -53,10 +61,13 @@ export const getStudentById = async (req: AuthRequest, res: Response) => {
       .populate('teacher', 'firstName lastName email');
     
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ success: false, message: 'Student not found' });
     }
-    
-    res.json(student);
+
+    res.json({
+      success: true,
+      data: student
+    });
   } catch (error) {
     console.error('Error fetching student:', error);
     res.status(500).json({ message: 'Server error' });
@@ -129,8 +140,12 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     const studentResponse = await Student.findById(student._id)
       .select('-password')
       .populate('teacher', 'firstName lastName email');
-      
-    res.status(201).json(studentResponse);
+
+    res.status(201).json({
+      success: true,
+      data: studentResponse,
+      message: 'Student created successfully'
+    });
   } catch (error) {
     console.error('Error creating student:', error);
     res.status(500).json({ message: 'Server error' });
@@ -198,7 +213,11 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       { new: true, runValidators: true }
     ).select('-password');
 
-    res.json(updatedStudent);
+    res.json({
+      success: true,
+      data: updatedStudent,
+      message: 'Student updated successfully'
+    });
   } catch (error) {
     console.error('Error updating student:', error);
     res.status(500).json({ message: 'Server error' });
@@ -211,11 +230,11 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
     const student = await Student.findById(req.params.id);
     
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
     await Student.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Student deleted successfully' });
+    res.json({ success: true, message: 'Student deleted successfully' });
   } catch (error) {
     console.error('Error deleting student:', error);
     res.status(500).json({ message: 'Server error' });
@@ -231,7 +250,7 @@ export const assignTeacher = async (req: AuthRequest, res: Response) => {
     const teacher = await Teacher.findById(teacherId);
 
     if (!student || !teacher) {
-      return res.status(404).json({ message: 'Student or teacher not found' });
+      return res.status(404).json({ success: false, message: 'Student or teacher not found' });
     }
 
     if (student.teacher && student.teacher.toString() !== teacherId) {
@@ -252,7 +271,11 @@ export const assignTeacher = async (req: AuthRequest, res: Response) => {
       .select('-password')
       .populate('teacher', 'firstName lastName email');
 
-    res.json(populated);
+    res.json({
+      success: true,
+      data: populated,
+      message: 'Teacher assigned successfully'
+    });
   } catch (error) {
     console.error('Error assigning teacher:', error);
     res.status(500).json({ message: 'Server error' });
@@ -262,16 +285,21 @@ export const assignTeacher = async (req: AuthRequest, res: Response) => {
 // Get student stats
 export const getStudentStats = async (req: AuthRequest, res: Response) => {
   try {
-    const totalStudents = await Student.countDocuments({ role: 'student' });
-    const graduatedStudents = await Student.countDocuments({ 
-      role: 'student', 
-      isGraduated: true 
+    const matchFilter: any = { role: 'student' };
+    if (req.user?.role === 'teacher') {
+      matchFilter.teacher = req.user._id;
+    }
+
+    const totalStudents = await Student.countDocuments(matchFilter);
+    const graduatedStudents = await Student.countDocuments({
+      ...matchFilter,
+      isGraduated: true
     });
     const activeStudents = totalStudents - graduatedStudents;
 
     // Get grade distribution
     const gradeDistribution = await Student.aggregate([
-      { $match: { role: 'student', isGraduated: false } },
+      { $match: { ...matchFilter, isGraduated: false } },
       {
         $group: {
           _id: '$grade',
@@ -283,7 +311,7 @@ export const getStudentStats = async (req: AuthRequest, res: Response) => {
 
     // Get school distribution
     const schoolDistribution = await Student.aggregate([
-      { $match: { role: 'student', isGraduated: false } },
+      { $match: { ...matchFilter, isGraduated: false } },
       {
         $group: {
           _id: '$school',
@@ -294,11 +322,14 @@ export const getStudentStats = async (req: AuthRequest, res: Response) => {
     ]);
 
     res.json({
-      totalStudents,
-      activeStudents,
-      graduatedStudents,
-      gradeDistribution,
-      schoolDistribution
+      success: true,
+      data: {
+        totalStudents,
+        activeStudents,
+        graduatedStudents,
+        gradeDistribution,
+        schoolDistribution,
+      },
     });
   } catch (error) {
     console.error('Error fetching student stats:', error);

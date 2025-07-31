@@ -8,7 +8,10 @@ export const getTeachers = async (req: AuthRequest, res: Response) => {
     const teachers = await Teacher.find()
       .select('-password')
       .populate('students', 'firstName lastName email');
-    res.json(teachers);
+    res.json({
+      success: true,
+      data: teachers,
+    });
   } catch (error) {
     console.error('Error fetching teachers:', error);
     res.status(500).json({ message: 'Server error' });
@@ -21,9 +24,12 @@ export const getTeacherById = async (req: AuthRequest, res: Response) => {
       .select('-password')
       .populate('students', 'firstName lastName email');
     if (!teacher) {
-      return res.status(404).json({ message: 'Teacher not found' });
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
-    res.json(teacher);
+    res.json({
+      success: true,
+      data: teacher,
+    });
   } catch (error) {
     console.error('Error fetching teacher:', error);
     res.status(500).json({ message: 'Server error' });
@@ -36,9 +42,12 @@ export const getTeacherStudents = async (req: AuthRequest, res: Response) => {
       .select('_id')
       .populate('students', 'firstName lastName email');
     if (!teacher) {
-      return res.status(404).json({ message: 'Teacher not found' });
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
-    res.json(teacher.students);
+    res.json({
+      success: true,
+      data: teacher.students,
+    });
   } catch (error) {
     console.error('Error fetching teacher students:', error);
     res.status(500).json({ message: 'Server error' });

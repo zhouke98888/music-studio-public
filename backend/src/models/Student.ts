@@ -58,7 +58,7 @@ const StudentSchema = new Schema<IStudent>({
   },
   teacher: {
     type: Schema.Types.ObjectId,
-    ref: 'teacher'
+    ref: 'User'
   }
 }, {
   timestamps: true
