@@ -86,7 +86,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     let assignedTeacherId = teacherId;
     if (req.user?.role === 'teacher') {
       assignedTeacherId = req.user._id;
-    } 
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ 
@@ -116,17 +116,13 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       fatherName,
       fatherPhone,
       isGraduated: false,
-      teacher: teacherId
+      teacher: assignedTeacherId
     });
 
     await student.save();
 
     if (assignedTeacherId) {
       await Teacher.findByIdAndUpdate(assignedTeacherId, { $addToSet: { students: student._id } });
-    }    
-    
-    if (teacherId) {
-      await Teacher.findByIdAndUpdate(teacherId, { $addToSet: { students: student._id } });
     }
 
     // Return student without password

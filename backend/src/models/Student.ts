@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
-import { ITeacher } from './Teacher';
+import type { ITeacher } from './Teacher';
+import './Teacher'; // ensure Teacher model is registered at runtime
 import { IUser, UserSchema, attachUserHooks } from './User';
 
 export interface IStudent extends IUser {
