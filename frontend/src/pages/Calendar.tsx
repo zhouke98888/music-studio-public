@@ -29,7 +29,7 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-const DnDCalendar = withDragAndDrop(Calendar);
+const DnDCalendar = withDragAndDrop<LessonEvent, object>(Calendar);
 
 interface LessonEvent extends Event {
   resource: Lesson;
@@ -112,10 +112,12 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const handleSelectEvent = async (event: LessonEvent) => {
+  const handleSelectEvent =  async(event: LessonEvent, e: React.SyntheticEvent) => {
     if (user?.role !== 'teacher') return;
     if (window.confirm('Delete this lesson?')) {
+      // void (async () => {
       await lessonsAPI.deleteLesson(event.resource._id);
+      // })();      
       loadLessons();
     }
   };
@@ -139,7 +141,7 @@ const CalendarPage: React.FC = () => {
           <DialogTitle>Create Lesson</DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12}}>
                 <TextField
                   fullWidth
                   label="Title"
@@ -147,7 +149,7 @@ const CalendarPage: React.FC = () => {
                   onChange={e => setNewLesson({ ...newLesson, title: e.target.value })}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12}}>
                 <DateTimePicker
                   label="Date & Time"
                   value={newLesson.scheduledDate}
@@ -155,7 +157,7 @@ const CalendarPage: React.FC = () => {
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12}}>
                 <TextField
                   fullWidth
                   type="number"
