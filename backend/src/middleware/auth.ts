@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
-import { Student } from '../models/Student';
-import { Teacher } from '../models/Teacher';
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -23,13 +21,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
     const decoded = jwt.verify(token, jwtSecret) as any;
     
-    let user: any = await User.findById(decoded.userId).select('-password');
-    if (!user) {
-      user = await Student.findById(decoded.userId).select('-password');
-    }
-    if (!user) {
-      user = await Teacher.findById(decoded.userId).select('-password');
-    }
+    const user: any = await User.findById(decoded.userId).select('-password');
     if (!user) {
       return res.status(401).json({
         success: false,
