@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { ITeacher, Teacher } from './Teacher';
+import { ITeacher } from './Teacher';
 import { User, IUser, UserSchema, attachUserHooks } from './User';
 
 export interface IStudent extends IUser {
