@@ -64,7 +64,7 @@ const StudentSchema = new Schema<IStudent>({
   timestamps: true
 });
 
-attachUserHooks(StudentSchema);
-
+// Hooks from the base User schema already handle password hashing
+// so avoid attaching them again here to prevent double hashing.
 // export const Student = mongoose.model<IStudent>('Student', StudentSchema, 'students');
 export const Student = User.discriminator<IStudent>('student', StudentSchema);

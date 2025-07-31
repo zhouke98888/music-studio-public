@@ -48,7 +48,7 @@ const TeacherSchema = new Schema<ITeacher>({
   timestamps: true
 });
 
-attachUserHooks(TeacherSchema);
-
+// Hooks from the base User schema already handle password hashing
+// so avoid attaching them again here to prevent double hashing.
 // export const Teacher = mongoose.model<ITeacher>('Teacher', TeacherSchema, 'teachers');
 export const Teacher = User.discriminator<ITeacher>("teacher", TeacherSchema);
