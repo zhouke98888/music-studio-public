@@ -18,6 +18,6 @@ POST http://localhost:5001/api/auth/login
 Content-Type: application/json
 
 {
-"username": "ev", 
-"password": "123"
+"username": "will", 
+"password": "1234"
 }

@@ -7,7 +7,7 @@ export interface IUser extends Document {
   password?: string;
   firstName: string;
   lastName: string;
-  role: 'student' | 'teacher' | 'admin';
+  role: 'student' | 'teacher' | 'admin'; 
   googleId?: string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
@@ -52,7 +52,7 @@ export const UserSchema = new Schema<IUser>({
     sparse: true
   }
 }, {
-  timestamps: true
+  timestamps: true, discriminatorKey: 'role' 
 });
 
 

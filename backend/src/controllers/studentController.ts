@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { Student, IStudent } from '../models/Student';
-import { Teacher } from '../models/Teacher';
 import { User } from '../models/User';
+import { Teacher } from '../models/Teacher';
+import { Student, IStudent } from '../models/Student';
 import { AuthRequest } from '../middleware/auth';
 
 // Get all students
