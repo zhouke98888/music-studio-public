@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -11,7 +11,7 @@ import {
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { lessonsAPI, teachersAPI } from '../services/api';
 import { Lesson, Student } from '../types';
@@ -40,6 +40,14 @@ const CalendarPage: React.FC = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [events, setEvents] = useState<LessonEvent[]>([]);
   const [createDialog, setCreateDialog] = useState(false);
+  const [editDialog, setEditDialog] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [editData, setEditData] = useState({
+    title: '',
+    scheduledDate: new Date(),
+    duration: 60,
+    students: [] as string[],
+  });
   const [newLesson, setNewLesson] = useState({
     title: '',
     scheduledDate: new Date(),
@@ -48,14 +56,29 @@ const CalendarPage: React.FC = () => {
   });
   const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
+  const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
 
-  const loadLessons = async () => {
-    const data = await lessonsAPI.getLessons();
+  const loadLessons = async (start?: Date, end?: Date) => {
+    const params: any = {};
+    if (start && end) {
+      params.startDate = start.toISOString();
+      params.endDate = end.toISOString();
+    }
+    const data = await lessonsAPI.getLessons(params);
     setLessons(data);
   };
 
   useEffect(() => {
-    loadLessons();
+    if (range) {
+      loadLessons(range.start, range.end);
+    } else {
+      loadLessons();
+    }
+  }, [range]);
+
+  useEffect(() => {
+    const now = new Date();
+    setRange({ start: startOfMonth(now), end: endOfMonth(now) });
   }, []);
 
   useEffect(() => {
@@ -87,6 +110,14 @@ const CalendarPage: React.FC = () => {
     }
   };
 
+  const handleRangeChange = (r: any) => {
+    if (Array.isArray(r)) {
+      setRange({ start: r[0], end: r[r.length - 1] });
+    } else if (r.start && r.end) {
+      setRange({ start: r.start, end: r.end });
+    }
+  };
+
   const handleSelectSlot = (slot: any) => {
     if (user?.role !== 'teacher') return;
     setSelectedSlot(slot);
@@ -112,14 +143,45 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const handleSelectEvent =  async(event: LessonEvent, e: React.SyntheticEvent) => {
-    if (user?.role !== 'teacher') return;
-    if (window.confirm('Delete this lesson?')) {
-      // void (async () => {
-      await lessonsAPI.deleteLesson(event.resource._id);
-      // })();      
+  const handleUpdateLesson = async () => {
+    if (!editingLesson) return;
+    try {
+      await lessonsAPI.updateLesson(editingLesson._id, {
+        ...editData,
+        scheduledDate: editData.scheduledDate.toISOString(),
+      });
+      setEditDialog(false);
+      setEditingLesson(null);
       loadLessons();
+    } catch (err) {
+      console.error(err);
     }
+  };
+
+  const handleDeleteLesson = async () => {
+    if (!editingLesson) return;
+    if (!window.confirm('Delete this lesson?')) return;
+    try {
+      await lessonsAPI.deleteLesson(editingLesson._id);
+      setEditDialog(false);
+      setEditingLesson(null);
+      loadLessons();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSelectEvent = (event: LessonEvent) => {
+    if (user?.role !== 'teacher') return;
+    const l = event.resource;
+    setEditingLesson(l);
+    setEditData({
+      title: l.title,
+      scheduledDate: new Date(l.scheduledDate),
+      duration: l.duration,
+      students: l.students.map((s: any) => (typeof s === 'string' ? s : s._id)),
+    });
+    setEditDialog(true);
   };
 
   return (
@@ -134,6 +196,7 @@ const CalendarPage: React.FC = () => {
           resizable
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
+          onRangeChange={handleRangeChange}
           style={{ height: 700 }}
         />
 
@@ -157,6 +220,29 @@ const CalendarPage: React.FC = () => {
                   slotProps={{ textField: { fullWidth: true } }}
                 />
               </Grid>
+              {user?.role === 'teacher' && (
+                <Grid size={{ xs: 12}}>
+                  <FormControl fullWidth>
+                    <InputLabel>Students</InputLabel>
+                    <Select
+                      multiple
+                      label="Students"
+                      value={newLesson.students}
+                      onChange={e => setNewLesson({ ...newLesson, students: e.target.value as string[] })}
+                      renderValue={(selected) => (selected as string[]).map(id => {
+                        const s = availableStudents.find(stu => stu._id === id);
+                        return s ? `${s.firstName} ${s.lastName}` : id;
+                      }).join(', ')}
+                    >
+                      {availableStudents.map(stu => (
+                        <MenuItem key={stu._id} value={stu._id}>
+                          {stu.firstName} {stu.lastName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
               <Grid size={{ xs: 12}}>
                 <TextField
                   fullWidth
@@ -170,8 +256,71 @@ const CalendarPage: React.FC = () => {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setCreateDialog(false)}>Cancel</Button>
-            <Button variant="contained" onClick={handleCreateLesson} disabled={!newLesson.title}>
+            <Button variant="contained" onClick={handleCreateLesson} disabled={!newLesson.title || newLesson.students.length === 0}>
               Create
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={editDialog} onClose={() => setEditDialog(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Edit Lesson</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  label="Title"
+                  value={editData.title}
+                  onChange={e => setEditData({ ...editData, title: e.target.value })}
+                />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <DateTimePicker
+                  label="Date & Time"
+                  value={editData.scheduledDate}
+                  onChange={date => setEditData({ ...editData, scheduledDate: date || new Date() })}
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+              {user?.role === 'teacher' && (
+                <Grid size={{ xs: 12}}>
+                  <FormControl fullWidth>
+                    <InputLabel>Students</InputLabel>
+                    <Select
+                      multiple
+                      label="Students"
+                      value={editData.students}
+                      onChange={e => setEditData({ ...editData, students: e.target.value as string[] })}
+                      renderValue={(selected) => (selected as string[]).map(id => {
+                        const s = availableStudents.find(stu => stu._id === id);
+                        return s ? `${s.firstName} ${s.lastName}` : id;
+                      }).join(', ')}
+                    >
+                      {availableStudents.map(stu => (
+                        <MenuItem key={stu._id} value={stu._id}>
+                          {stu.firstName} {stu.lastName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Duration (minutes)"
+                  value={editData.duration}
+                  onChange={e => setEditData({ ...editData, duration: parseInt(e.target.value) || 60 })}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDialog(false)}>Cancel</Button>
+            <Button color="error" onClick={handleDeleteLesson}>Delete</Button>
+            <Button variant="contained" onClick={handleUpdateLesson} disabled={!editData.title || editData.students.length === 0}>
+              Save
             </Button>
           </DialogActions>
         </Dialog>
