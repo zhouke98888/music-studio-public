@@ -12,6 +12,7 @@ import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from 'date-fns';
+import { View } from 'react-big-calendar';
 import { enUS } from 'date-fns/locale';
 import { lessonsAPI, teachersAPI } from '../services/api';
 import { Lesson, Student } from '../types';
@@ -57,6 +58,8 @@ const CalendarPage: React.FC = () => {
   const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [view, setView] = useState<View>('month');
 
   const loadLessons = async (start?: Date, end?: Date) => {
     const params: any = {};
@@ -78,6 +81,7 @@ const CalendarPage: React.FC = () => {
 
   useEffect(() => {
     const now = new Date();
+    setCurrentDate(now);
     setRange({ start: startOfMonth(now), end: endOfMonth(now) });
   }, []);
 
@@ -116,6 +120,14 @@ const CalendarPage: React.FC = () => {
     } else if (r.start && r.end) {
       setRange({ start: r.start, end: r.end });
     }
+  };
+
+  const handleNavigate = (date: Date) => {
+    setCurrentDate(date);
+  };
+
+  const handleViewChange = (v: View) => {
+    setView(v);
   };
 
   const handleSelectSlot = (slot: any) => {
@@ -190,6 +202,8 @@ const CalendarPage: React.FC = () => {
         <DnDCalendar
           localizer={localizer}
           events={events}
+          date={currentDate}
+          view={view}
           selectable={user?.role === 'teacher'}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventDrop}
@@ -197,6 +211,8 @@ const CalendarPage: React.FC = () => {
           onSelectSlot={handleSelectSlot}
           onSelectEvent={handleSelectEvent}
           onRangeChange={handleRangeChange}
+          onNavigate={handleNavigate}
+          onView={handleViewChange}
           style={{ height: 700 }}
         />
 
