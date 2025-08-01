@@ -22,8 +22,5 @@
   "devDependencies": {
     "@types/react-big-calendar": "^1.16.2",
     "concurrently": "^8.2.2"
-  },
-  "dependencies": {
-    "react-big-calendar": "^1.19.4"
   }
 }
