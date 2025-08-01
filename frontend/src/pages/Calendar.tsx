@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Button, ButtonGroup, Typography, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -35,6 +35,24 @@ const DnDCalendar = withDragAndDrop<LessonEvent, object>(Calendar);
 interface LessonEvent extends Event {
   resource: Lesson;
 }
+
+const CustomToolbar: React.FC<any> = ({ label, onNavigate, onView, view }) => (
+  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+    <Box>
+      <Button size="small" onClick={() => onNavigate('TODAY')}>Today</Button>
+      <Button size="small" onClick={() => onNavigate('PREV')}>Prev</Button>
+      <Button size="small" onClick={() => onNavigate('NEXT')}>Next</Button>
+    </Box>
+    <Typography variant="h6" component="span">{label}</Typography>
+    <ButtonGroup size="small">
+      {['month', 'week', 'day', 'agenda'].map(v => (
+        <Button key={v} variant={view === v ? 'contained' : 'outlined'} onClick={() => onView(v)}>
+          {v.charAt(0).toUpperCase() + v.slice(1)}
+        </Button>
+      ))}
+    </ButtonGroup>
+  </Box>
+);
 
 const CalendarPage: React.FC = () => {
   const { user } = useAuth();
@@ -202,6 +220,7 @@ const CalendarPage: React.FC = () => {
         <DnDCalendar
           localizer={localizer}
           events={events}
+          components={{ toolbar: CustomToolbar }}
           date={currentDate}
           view={view}
           selectable={user?.role === 'teacher'}
