@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Invoice } from '../models/Invoice';
 import { Lesson } from '../models/Lesson';
 import { User } from '../models/User';
+import { Student } from '../models/Student';
 
 export const getInvoices = async (req: Request, res: Response) => {
   try {
@@ -249,15 +250,18 @@ export const generateMonthlyInvoices = async (req: Request, res: Response) => {
     // Find all completed lessons for the given month/year
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
-    
+
     const lessons = await Lesson.find({
       scheduledDate: { $gte: startDate, $lte: endDate },
       status: 'completed'
     }).populate('students', 'firstName lastName email');
-    
-    const invoices = [];
+
+    // Fetch all students to ensure an invoice is created for each one
+    const students = await Student.find({}, '_id');
+
+    const invoices: any[] = [];
     const studentLessons: { [key: string]: any[] } = {};
-    
+
     // Group lessons by student
     lessons.forEach(lesson => {
       lesson.students.forEach(student => {
@@ -268,22 +272,23 @@ export const generateMonthlyInvoices = async (req: Request, res: Response) => {
         studentLessons[studentId].push(lesson);
       });
     });
-    
+
     // Create invoices for each student
-    for (const studentId in studentLessons) {
+    for (const student of students) {
+      const studentId = student._id.toString();
       const existingInvoice = await Invoice.findOne({
         student: studentId,
         month,
         year
       });
-      
+
       if (existingInvoice) {
         continue; // Skip if invoice already exists
       }
-      
-      const studentLessonList = studentLessons[studentId];
-      const totalAmount = studentLessonList.length * 50; // $50 per lesson (you can adjust this)
-      
+
+      const studentLessonList = studentLessons[studentId] || [];
+      const totalAmount = studentLessonList.length * 50; // $50 per lesson (adjust as needed)
+
       const invoice = new Invoice({
         student: studentId,
         month,
@@ -292,11 +297,11 @@ export const generateMonthlyInvoices = async (req: Request, res: Response) => {
         totalAmount,
         dueDate: new Date(year, month, 15) // Due on 15th of next month
       });
-      
+
       await invoice.save();
       invoices.push(invoice);
     }
-    
+
     res.json({
       success: true,
       data: invoices,
