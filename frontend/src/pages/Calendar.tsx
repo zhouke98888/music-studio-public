@@ -69,6 +69,7 @@ const CalendarPage: React.FC = () => {
     students: [] as string[],
   });
   const [newLesson, setNewLesson] = useState({
+    type: 'private' as 'private' | 'masterclass' | 'group',
     title: '',
     scheduledDate: new Date(),
     duration: 60,
@@ -169,7 +170,14 @@ const CalendarPage: React.FC = () => {
         recurringUntil: newLesson.recurringUntil?.toISOString(),
       });
       setCreateDialog(false);
-      setNewLesson({ title: '', scheduledDate: new Date(), duration: 60, students: [], recurringUntil: null });
+      setNewLesson({
+        type: 'private',
+        title: '',
+        scheduledDate: new Date(),
+        duration: 60,
+        students: [],
+        recurringUntil: null,
+      });
       loadLessons();
     } catch (err) {
       console.error(err);
@@ -249,6 +257,20 @@ const CalendarPage: React.FC = () => {
                   value={newLesson.title}
                   onChange={e => setNewLesson({ ...newLesson, title: e.target.value })}
                 />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <FormControl fullWidth>
+                  <InputLabel>Type</InputLabel>
+                  <Select
+                    value={newLesson.type}
+                    label="Type"
+                    onChange={e => setNewLesson({ ...newLesson, type: e.target.value as any })}
+                  >
+                    <MenuItem value="private">Private</MenuItem>
+                    <MenuItem value="group">Group</MenuItem>
+                    <MenuItem value="masterclass">Masterclass</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
               <Grid size={{ xs: 12}}>
               <DateTimePicker
