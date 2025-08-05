@@ -5,24 +5,28 @@ import { User } from '../models/User';
 
 export const getInvoices = async (req: Request, res: Response) => {
   try {
-    const { status, month, year, student } = req.query;
+    const { status, month, year, student, teacher } = req.query;
     const filter: any = {};
-    
+
     if (status) filter.status = status;
     if (month) filter.month = parseInt(month as string);
     if (year) filter.year = parseInt(year as string);
     if (student) filter.student = student;
-    
-    // For students, only show their own invoices
+    if (teacher) filter.teacher = teacher;
+
+    // Restrict invoices based on user role
     if ((req as any).user?.role === 'student') {
       filter.student = (req as any).user._id;
+    } else if ((req as any).user?.role === 'teacher') {
+      filter.teacher = (req as any).user._id;
     }
-    
+
     const invoices = await Invoice.find(filter)
       .populate('student', 'firstName lastName email')
+      .populate('teacher', 'firstName lastName email')
       .populate('lessons', 'title scheduledDate duration')
       .sort({ createdAt: -1 });
-    
+
     res.json({
       success: true,
       data: invoices
@@ -42,6 +46,7 @@ export const getInvoiceById = async (req: Request, res: Response) => {
     
     const invoice = await Invoice.findById(id)
       .populate('student', 'firstName lastName email phone')
+      .populate('teacher', 'firstName lastName email')
       .populate('lessons', 'title scheduledDate duration type status');
     
     if (!invoice) {
@@ -53,6 +58,13 @@ export const getInvoiceById = async (req: Request, res: Response) => {
     
     // Students can only view their own invoices
     if ((req as any).user?.role === 'student' && invoice.student._id.toString() !== (req as any).user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only view your own invoices'
+      });
+    }
+    // Teachers can only view their own invoices
+    if ((req as any).user?.role === 'teacher' && invoice.teacher._id.toString() !== (req as any).user._id.toString()) {
       return res.status(403).json({
         success: false,
         message: 'You can only view your own invoices'
@@ -74,17 +86,17 @@ export const getInvoiceById = async (req: Request, res: Response) => {
 
 export const createInvoice = async (req: Request, res: Response) => {
   try {
-    const { student, month, year, lessons, totalAmount, dueDate } = req.body;
-    
-    // Check if invoice already exists for this student/month/year
-    const existingInvoice = await Invoice.findOne({ student, month, year });
+    const { student, teacher, month, year, lessons, totalAmount, dueDate } = req.body;
+
+    // Check if invoice already exists for this student/teacher/month/year
+    const existingInvoice = await Invoice.findOne({ student, teacher, month, year });
     if (existingInvoice) {
       return res.status(400).json({
         success: false,
         message: 'Invoice already exists for this student and month'
       });
     }
-    
+
     // Validate student exists
     const studentUser = await User.findById(student);
     if (!studentUser) {
@@ -93,7 +105,16 @@ export const createInvoice = async (req: Request, res: Response) => {
         message: 'Student not found'
       });
     }
-    
+
+    // Validate teacher exists
+    const teacherUser = await User.findById(teacher);
+    if (!teacherUser || teacherUser.role !== 'teacher') {
+      return res.status(400).json({
+        success: false,
+        message: 'Teacher not found'
+      });
+    }
+
     // Validate lessons exist
     if (lessons && lessons.length > 0) {
       const lessonDocs = await Lesson.find({ _id: { $in: lessons } });
@@ -104,22 +125,24 @@ export const createInvoice = async (req: Request, res: Response) => {
         });
       }
     }
-    
+
     const invoice = new Invoice({
       student,
+      teacher,
       month,
       year,
       lessons: lessons || [],
       totalAmount,
       dueDate: new Date(dueDate)
     });
-    
+
     await invoice.save();
-    
+
     const populatedInvoice = await Invoice.findById(invoice._id)
       .populate('student', 'firstName lastName email')
+      .populate('teacher', 'firstName lastName email')
       .populate('lessons', 'title scheduledDate duration');
-    
+
     res.status(201).json({
       success: true,
       data: populatedInvoice
@@ -157,6 +180,7 @@ export const updateInvoice = async (req: Request, res: Response) => {
     
     const populatedInvoice = await Invoice.findById(invoice._id)
       .populate('student', 'firstName lastName email')
+      .populate('teacher', 'firstName lastName email')
       .populate('lessons', 'title scheduledDate duration');
     
     res.json({
@@ -220,6 +244,7 @@ export const markAsPaid = async (req: Request, res: Response) => {
     
     const populatedInvoice = await Invoice.findById(invoice._id)
       .populate('student', 'firstName lastName email')
+      .populate('teacher', 'firstName lastName email')
       .populate('lessons', 'title scheduledDate duration');
     
     res.json({
@@ -238,65 +263,76 @@ export const markAsPaid = async (req: Request, res: Response) => {
 export const generateMonthlyInvoices = async (req: Request, res: Response) => {
   try {
     const { month, year } = req.body;
-    
+
     if (!month || !year) {
       return res.status(400).json({
         success: false,
         message: 'Month and year are required'
       });
     }
-    
-    // Find all completed lessons for the given month/year
+
+    // Find all scheduled or confirmed lessons for the given month/year
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
-    
+
     const lessons = await Lesson.find({
       scheduledDate: { $gte: startDate, $lte: endDate },
-      status: 'completed'
-    }).populate('students', 'firstName lastName email');
-    
+      status: { $in: ['scheduled', 'confirmed'] }
+    })
+      .populate('students', 'firstName lastName email')
+      .populate('teacher', 'lessonRate');
+
     const invoices = [];
-    const studentLessons: { [key: string]: any[] } = {};
-    
-    // Group lessons by student
+    const lessonMap: { [key: string]: any[] } = {};
+
+    // Group lessons by student and teacher
     lessons.forEach(lesson => {
+      const teacherId = (lesson.teacher as any)._id.toString();
       lesson.students.forEach(student => {
         const studentId = student._id.toString();
-        if (!studentLessons[studentId]) {
-          studentLessons[studentId] = [];
+        const key = `${studentId}_${teacherId}`;
+        if (!lessonMap[key]) {
+          lessonMap[key] = [];
         }
-        studentLessons[studentId].push(lesson);
+        lessonMap[key].push(lesson);
       });
     });
-    
-    // Create invoices for each student
-    for (const studentId in studentLessons) {
-      const existingInvoice = await Invoice.findOne({
+
+    // Create or update invoices for each student/teacher pair
+    for (const key in lessonMap) {
+      const [studentId, teacherId] = key.split('_');
+      const studentLessonList = lessonMap[key];
+      const rate = (studentLessonList[0].teacher as any).lessonRate || 0;
+      const totalAmount = studentLessonList.length * rate;
+
+      let invoice = await Invoice.findOne({
         student: studentId,
+        teacher: teacherId,
         month,
         year
       });
-      
-      if (existingInvoice) {
-        continue; // Skip if invoice already exists
+
+      if (invoice) {
+        invoice.lessons = studentLessonList.map(l => l._id);
+        invoice.totalAmount = totalAmount;
+        invoice.dueDate = new Date(year, month, 15);
+        await invoice.save();
+      } else {
+        invoice = new Invoice({
+          student: studentId,
+          teacher: teacherId,
+          month,
+          year,
+          lessons: studentLessonList.map(l => l._id),
+          totalAmount,
+          dueDate: new Date(year, month, 15) // Due on 15th of next month
+        });
+        await invoice.save();
       }
-      
-      const studentLessonList = studentLessons[studentId];
-      const totalAmount = studentLessonList.length * 50; // $50 per lesson (you can adjust this)
-      
-      const invoice = new Invoice({
-        student: studentId,
-        month,
-        year,
-        lessons: studentLessonList.map(l => l._id),
-        totalAmount,
-        dueDate: new Date(year, month, 15) // Due on 15th of next month
-      });
-      
-      await invoice.save();
+
       invoices.push(invoice);
     }
-    
+
     res.json({
       success: true,
       data: invoices,
