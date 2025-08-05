@@ -35,6 +35,7 @@ import {
   LocationOn as LocationOnIcon,
 } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
@@ -68,7 +69,8 @@ const Lessons: React.FC = () => {
     scheduledDate: new Date(),
     duration: 60,
     location: '',
-    notes: ''
+    notes: '',
+    recurringUntil: null as Date | null
   });
 
   useEffect(() => {
@@ -115,6 +117,7 @@ const Lessons: React.FC = () => {
       await lessonsAPI.createLesson({
         ...newLesson,
         scheduledDate: newLesson.scheduledDate.toISOString(),
+        recurringUntil: newLesson.recurringUntil?.toISOString(),
       });
       setCreateDialogOpen(false);
       setNewLesson({
@@ -125,7 +128,8 @@ const Lessons: React.FC = () => {
         scheduledDate: new Date(),
         duration: 60,
         location: '',
-        notes: ''
+        notes: '',
+        recurringUntil: null
       });
       loadLessons();
     } catch (err: any) {
@@ -438,13 +442,21 @@ const Lessons: React.FC = () => {
                 </FormControl>
               </Grid>
               <Grid size={{ xs: 12}}>
-                <DateTimePicker
-                  label="Scheduled Date & Time"
-                  value={newLesson.scheduledDate}
-                  onChange={(date) => setNewLesson({ ...newLesson, scheduledDate: date || new Date() })}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
-              </Grid>
+              <DateTimePicker
+                label="Scheduled Date & Time"
+                value={newLesson.scheduledDate}
+                onChange={(date) => setNewLesson({ ...newLesson, scheduledDate: date || new Date() })}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12}}>
+              <DatePicker
+                label="Repeat Weekly Until"
+                value={newLesson.recurringUntil}
+                onChange={(date) => setNewLesson({ ...newLesson, recurringUntil: date })}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </Grid>
               {user?.role === 'teacher' && (
                 <Grid size={{ xs: 12}}>
                   <FormControl fullWidth>
