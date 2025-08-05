@@ -30,6 +30,7 @@ export interface Teacher extends User {
   specializations: string[];
   availability: TeacherAvailability[];
   students: string[];
+  rate: number;
 }
 
 export interface TeacherAvailability {
@@ -60,6 +61,7 @@ export interface Lesson {
 export interface Invoice {
   _id: string;
   student: string; // Student ID
+  teacher: string; // Teacher ID
   month: number; // 1-12
   year: number;
   lessons: string[]; // Lesson IDs
