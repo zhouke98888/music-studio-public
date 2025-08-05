@@ -278,7 +278,7 @@ export const generateMonthlyInvoices = async (req: Request, res: Response) => {
     }
 
     const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+    const endDate = new Date(year, month, 1);
 
     const lessons = await Lesson.find({
       scheduledDate: { $gte: startDate, $lte: endDate },
@@ -293,7 +293,7 @@ export const generateMonthlyInvoices = async (req: Request, res: Response) => {
     lessons.forEach(lesson => {
       const teacherDoc = lesson.teacher as any;
       const teacherId = teacherDoc._id.toString();
-      const rate = teacherDoc.rate || 0;
+      const rate = teacherDoc.rate || 130;
 
       lesson.students.forEach((student: any) => {
         const studentId = student._id.toString();
