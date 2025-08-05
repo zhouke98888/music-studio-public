@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { lessonsAPI, instrumentsAPI } from '../services/api';
 import { Lesson, Instrument } from '../types';
+import { Link } from 'react-router-dom';
 import { format, isToday, isTomorrow } from 'date-fns';
 
 const Dashboard: React.FC = () => {
@@ -264,7 +265,11 @@ const Dashboard: React.FC = () => {
                   Quick Actions
                 </Typography>
                 <Box display="flex" flexDirection="column" gap={2}>
-                  <Button variant="contained" href="/lessons/new">
+                  <Button
+                    variant="contained"
+                    component={Link}
+                    to="/lessons?new=1"
+                  >
                     Schedule New Lesson
                   </Button>
                   <Button variant="outlined" href="/students">

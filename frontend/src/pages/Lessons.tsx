@@ -39,11 +39,13 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import { lessonsAPI, teachersAPI } from '../services/api';
 import { Lesson, Student } from '../types';
 
 const Lessons: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,13 @@ const Lessons: React.FC = () => {
   useEffect(() => {
     loadLessons();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('new') === '1') {
+      setCreateDialogOpen(true);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     const loadStudents = async () => {
