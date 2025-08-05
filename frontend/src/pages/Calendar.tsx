@@ -68,14 +68,18 @@ const CalendarPage: React.FC = () => {
     duration: 60,
     students: [] as string[],
   });
-  const [newLesson, setNewLesson] = useState({
+  const initialNewLesson = {
     type: 'private' as 'private' | 'masterclass' | 'group',
     title: '',
+    description: '',
     scheduledDate: new Date(),
     duration: 60,
+    location: '',
+    notes: '',
     students: [] as string[],
     recurringUntil: null as Date | null,
-  });
+  };
+  const [newLesson, setNewLesson] = useState(initialNewLesson);
   const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
@@ -154,11 +158,7 @@ const CalendarPage: React.FC = () => {
   const handleSelectSlot = (slot: any) => {
     if (user?.role !== 'teacher') return;
     setSelectedSlot(slot);
-    setNewLesson({
-      ...newLesson,
-      scheduledDate: slot.start,
-      duration: (slot.end.getTime() - slot.start.getTime()) / 60000,
-    });
+    setNewLesson({ ...initialNewLesson, scheduledDate: slot.start });
     setCreateDialog(true);
   };
 
@@ -170,15 +170,8 @@ const CalendarPage: React.FC = () => {
         recurringUntil: newLesson.recurringUntil?.toISOString(),
       });
       setCreateDialog(false);
-      setNewLesson({
-        type: 'private',
-        title: '',
-        scheduledDate: new Date(),
-        duration: 60,
-        students: [],
-        recurringUntil: null,
-      });
-      loadLessons();
+      setNewLesson({ ...initialNewLesson });
+      await loadLessons(range?.start, range?.end);
     } catch (err) {
       console.error(err);
     }
@@ -318,6 +311,34 @@ const CalendarPage: React.FC = () => {
                   label="Duration (minutes)"
                   value={newLesson.duration}
                   onChange={e => setNewLesson({ ...newLesson, duration: parseInt(e.target.value) || 60 })}
+                />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  label="Location"
+                  value={newLesson.location}
+                  onChange={e => setNewLesson({ ...newLesson, location: e.target.value })}
+                />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Description"
+                  value={newLesson.description}
+                  onChange={e => setNewLesson({ ...newLesson, description: e.target.value })}
+                />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label="Notes"
+                  value={newLesson.notes}
+                  onChange={e => setNewLesson({ ...newLesson, notes: e.target.value })}
                 />
               </Grid>
             </Grid>

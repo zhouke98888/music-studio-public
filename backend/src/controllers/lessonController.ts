@@ -335,7 +335,7 @@ export const createLesson = async (req: AuthRequest, res: Response) => {
     const teacherId = req.user._id;
     const lessons = [] as any[];
     let currentDate = new Date(scheduledDate);
-    const endDate = recurringUntil ? new Date(recurringUntil) : null;
+    const endDate = recurringUntil ? endOfDay(new Date(recurringUntil)) : null;
 
     while (!endDate || currentDate <= endDate) {
       const lesson = new Lesson({
