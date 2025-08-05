@@ -273,7 +273,7 @@ const Lessons: React.FC = () => {
                   startIcon={<CheckCircleIcon />}
                   onClick={() => openActionDialog(lesson, 'confirm')}
                 >
-                  Confirm Attendance
+                  I am Here
                 </Button>
               )}
               {lesson.status === 'scheduled' && (
@@ -513,7 +513,7 @@ const Lessons: React.FC = () => {
         {/* Action Dialog */}
         <Dialog open={actionDialogOpen} onClose={() => setActionDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>
-            {actionType === 'confirm' && 'Confirm Attendance'}
+            {actionType === 'confirm' && 'I am Here'}
             {actionType === 'reschedule' && 'Request Reschedule'}
             {actionType === 'cancel' && 'Request Cancellation'}
             {actionType === 'approve-reschedule' && 'Approve Reschedule'}
