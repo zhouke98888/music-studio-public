@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IInvoice extends Document {
   student: mongoose.Types.ObjectId;
+  teacher: mongoose.Types.ObjectId;
   month: number; // 1-12
   year: number;
   lessons: mongoose.Types.ObjectId[];
@@ -14,6 +15,11 @@ export interface IInvoice extends Document {
 
 const InvoiceSchema = new Schema<IInvoice>({
   student: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  teacher: {
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: true
@@ -60,8 +66,8 @@ const InvoiceSchema = new Schema<IInvoice>({
   timestamps: true
 });
 
-// Unique constraint for student-month-year combination
-InvoiceSchema.index({ student: 1, month: 1, year: 1 }, { unique: true });
+// Unique constraint for student-teacher-month-year combination
+InvoiceSchema.index({ student: 1, teacher: 1, month: 1, year: 1 }, { unique: true });
 InvoiceSchema.index({ status: 1 });
 InvoiceSchema.index({ dueDate: 1 });
 

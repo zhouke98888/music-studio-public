@@ -28,6 +28,7 @@ export interface Teacher extends User {
   specializations: string[];
   availability: TeacherAvailability[];
   students: User[];
+  rate: number;
 }
 
 export interface TeacherAvailability {
@@ -58,6 +59,7 @@ export interface Lesson {
 export interface Invoice {
   _id: string;
   student: User;
+  teacher: User;
   month: number;
   year: number;
   lessons: Lesson[];
@@ -116,6 +118,7 @@ export interface RegisterData {
   // Teacher specific
   specializations?: string[];
   availability?: TeacherAvailability[];
+  rate?: number;
 }
 
 export interface ApiResponse<T = any> {
