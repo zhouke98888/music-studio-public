@@ -12,6 +12,7 @@ export interface ITeacher extends IUser {
   specializations: string[];
   availability: ITeacherAvailability[];
   students: mongoose.Types.ObjectId[];
+  lessonRate: number;
 }
 
 const TeacherAvailabilitySchema = new Schema<ITeacherAvailability>({
@@ -43,7 +44,12 @@ const TeacherSchema = new Schema<ITeacher>({
   students: [{
     type: Schema.Types.ObjectId,
     ref: 'User'
-  }]
+  }],
+  lessonRate: {
+    type: Number,
+    required: true,
+    default: 0
+  }
 }, {
   timestamps: true
 });
