@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, ButtonGroup, Typography, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import {
@@ -67,12 +68,18 @@ const CalendarPage: React.FC = () => {
     duration: 60,
     students: [] as string[],
   });
-  const [newLesson, setNewLesson] = useState({
+  const initialNewLesson = {
+    type: 'private' as 'private' | 'masterclass' | 'group',
     title: '',
+    description: '',
     scheduledDate: new Date(),
     duration: 60,
+    location: '',
+    notes: '',
     students: [] as string[],
-  });
+    recurringUntil: null as Date | null,
+  };
+  const [newLesson, setNewLesson] = useState(initialNewLesson);
   const [availableStudents, setAvailableStudents] = useState<Student[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<any>(null);
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
@@ -151,11 +158,7 @@ const CalendarPage: React.FC = () => {
   const handleSelectSlot = (slot: any) => {
     if (user?.role !== 'teacher') return;
     setSelectedSlot(slot);
-    setNewLesson({
-      ...newLesson,
-      scheduledDate: slot.start,
-      duration: (slot.end.getTime() - slot.start.getTime()) / 60000,
-    });
+    setNewLesson({ ...initialNewLesson, scheduledDate: slot.start });
     setCreateDialog(true);
   };
 
@@ -164,10 +167,11 @@ const CalendarPage: React.FC = () => {
       await lessonsAPI.createLesson({
         ...newLesson,
         scheduledDate: newLesson.scheduledDate.toISOString(),
+        recurringUntil: newLesson.recurringUntil?.toISOString(),
       });
       setCreateDialog(false);
-      setNewLesson({ title: '', scheduledDate: new Date(), duration: 60, students: [] });
-      loadLessons();
+      setNewLesson({ ...initialNewLesson });
+      await loadLessons(range?.start, range?.end);
     } catch (err) {
       console.error(err);
     }
@@ -248,13 +252,35 @@ const CalendarPage: React.FC = () => {
                 />
               </Grid>
               <Grid size={{ xs: 12}}>
-                <DateTimePicker
-                  label="Date & Time"
-                  value={newLesson.scheduledDate}
-                  onChange={date => setNewLesson({ ...newLesson, scheduledDate: date || new Date() })}
-                  slotProps={{ textField: { fullWidth: true } }}
-                />
+                <FormControl fullWidth>
+                  <InputLabel>Type</InputLabel>
+                  <Select
+                    value={newLesson.type}
+                    label="Type"
+                    onChange={e => setNewLesson({ ...newLesson, type: e.target.value as any })}
+                  >
+                    <MenuItem value="private">Private</MenuItem>
+                    <MenuItem value="group">Group</MenuItem>
+                    <MenuItem value="masterclass">Masterclass</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
+              <Grid size={{ xs: 12}}>
+              <DateTimePicker
+                label="Date & Time"
+                value={newLesson.scheduledDate}
+                onChange={date => setNewLesson({ ...newLesson, scheduledDate: date || new Date() })}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 12}}>
+              <DatePicker
+                label="Repeat Weekly Until"
+                value={newLesson.recurringUntil}
+                onChange={date => setNewLesson({ ...newLesson, recurringUntil: date })}
+                slotProps={{ textField: { fullWidth: true } }}
+              />
+            </Grid>
               {user?.role === 'teacher' && (
                 <Grid size={{ xs: 12}}>
                   <FormControl fullWidth>
@@ -285,6 +311,34 @@ const CalendarPage: React.FC = () => {
                   label="Duration (minutes)"
                   value={newLesson.duration}
                   onChange={e => setNewLesson({ ...newLesson, duration: parseInt(e.target.value) || 60 })}
+                />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  label="Location"
+                  value={newLesson.location}
+                  onChange={e => setNewLesson({ ...newLesson, location: e.target.value })}
+                />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Description"
+                  value={newLesson.description}
+                  onChange={e => setNewLesson({ ...newLesson, description: e.target.value })}
+                />
+              </Grid>
+              <Grid size={{ xs: 12}}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label="Notes"
+                  value={newLesson.notes}
+                  onChange={e => setNewLesson({ ...newLesson, notes: e.target.value })}
                 />
               </Grid>
             </Grid>

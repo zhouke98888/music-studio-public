@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { Lesson } from '../models/Lesson';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
-import { startOfDay, endOfDay, parseISO } from 'date-fns';
+import { startOfDay, endOfDay, parseISO, addWeeks } from 'date-fns';
 
 export const getLessons = async (req: AuthRequest, res: Response) => {
   try {
@@ -328,34 +328,45 @@ export const createLesson = async (req: AuthRequest, res: Response) => {
       scheduledDate,
       duration,
       location,
-      notes
+      notes,
+      recurringUntil
     } = req.body;
 
     const teacherId = req.user._id;
+    const lessons = [] as any[];
+    let currentDate = new Date(scheduledDate);
+    const endDate = recurringUntil ? endOfDay(new Date(recurringUntil)) : null;
 
-    const lesson = new Lesson({
-      type,
-      title,
-      description,
-      teacher: teacherId,
-      students,
-      scheduledDate: new Date(scheduledDate),
-      duration,
-      location,
-      notes
-    });
+    while (!endDate || currentDate <= endDate) {
+      const lesson = new Lesson({
+        type,
+        title,
+        description,
+        teacher: teacherId,
+        students,
+        scheduledDate: currentDate,
+        duration,
+        location,
+        notes
+      });
 
-    await lesson.save();
+      await lesson.save();
 
-    const populatedLesson = await lesson.populate([
-      { path: 'teacher', select: 'firstName lastName email' },
-      { path: 'students', select: 'firstName lastName email' }
-    ]);
+      const populated = await lesson.populate([
+        { path: 'teacher', select: 'firstName lastName email' },
+        { path: 'students', select: 'firstName lastName email' }
+      ]);
+
+      lessons.push(populated);
+
+      if (!endDate) break;
+      currentDate = addWeeks(currentDate, 1);
+    }
 
     res.status(201).json({
       success: true,
-      data: populatedLesson,
-      message: 'Lesson created successfully'
+      data: lessons,
+      message: lessons.length > 1 ? 'Lessons created successfully' : 'Lesson created successfully'
     });
   } catch (error) {
     console.error('Create lesson error:', error);

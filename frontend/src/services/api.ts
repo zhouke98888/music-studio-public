@@ -107,8 +107,8 @@ export const lessonsAPI = {
     return response.data.data!;
   },
 
-  createLesson: async (lessonData: any): Promise<Lesson> => {
-    const response: AxiosResponse<ApiResponse<Lesson>> = await api.post('/lessons', lessonData);
+  createLesson: async (lessonData: any): Promise<Lesson[]> => {
+    const response: AxiosResponse<ApiResponse<Lesson[]>> = await api.post('/lessons', lessonData);
     return response.data.data!;
   },
 
