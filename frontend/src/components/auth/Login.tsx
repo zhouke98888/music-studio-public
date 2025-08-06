@@ -1,10 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-declare global {
-  interface Window {
-    google: any;
-  }
-}
 import {
   Box,
   Paper,
@@ -18,6 +12,12 @@ import {
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
