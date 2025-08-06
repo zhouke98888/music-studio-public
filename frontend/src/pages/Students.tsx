@@ -47,8 +47,10 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
 import { studentsAPI } from '../services/api';
 import { Student } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 const StudentsPage: React.FC = () => {
+  const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -424,14 +426,16 @@ const StudentsPage: React.FC = () => {
                       <EditIcon />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      onClick={() => handleDelete(student._id)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
+                    {user?.role === 'admin' && (
+                      <Tooltip title="Delete">
+                        <IconButton
+                          onClick={() => handleDelete(student._id)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                 </TableCell>
               </TableRow>
             ))}

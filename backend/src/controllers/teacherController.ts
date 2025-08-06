@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { Teacher } from '../models/Teacher';
 import { Student } from '../models/Student';
 import { AuthRequest } from '../middleware/auth';
@@ -50,6 +50,16 @@ export const getTeacherStudents = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching teacher students:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getPublicTeachers = async (req: Request, res: Response) => {
+  try {
+    const teachers = await Teacher.find().select('firstName lastName email');
+    res.json({ success: true, data: teachers });
+  } catch (error) {
+    console.error('Error fetching teachers:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
