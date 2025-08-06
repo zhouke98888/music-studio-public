@@ -86,6 +86,12 @@ const CalendarPage: React.FC = () => {
   const [range, setRange] = useState<{ start: Date; end: Date } | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<View>('month');
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [reason, setReason] = useState('');
+  const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
 
   const loadLessons = async (start?: Date, end?: Date) => {
     const params: any = {};
@@ -129,14 +135,22 @@ const CalendarPage: React.FC = () => {
   }, [lessons]);
 
   const handleEventDrop = async ({ event, start, end }: any) => {
-    try {
-      await lessonsAPI.updateLesson(event.resource._id, {
-        scheduledDate: start.toISOString(),
-        duration: (end.getTime() - start.getTime()) / 60000,
-      });
-      loadLessons();
-    } catch (e) {
-      console.error(e);
+    if (user?.role === 'teacher') {
+      try {
+        await lessonsAPI.updateLesson(event.resource._id, {
+          scheduledDate: start.toISOString(),
+          duration: (end.getTime() - start.getTime()) / 60000,
+        });
+        loadLessons(range?.start, range?.end);
+      } catch (e) {
+        console.error(e);
+      }
+    } else {
+      setSelectedLesson(event.resource);
+      setPendingSlot({ start, end });
+      setReason('');
+      setRescheduleDialogOpen(true);
+      loadLessons(range?.start, range?.end);
     }
   };
 
@@ -207,16 +221,62 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleSelectEvent = (event: LessonEvent) => {
-    if (user?.role !== 'teacher') return;
     const l = event.resource;
-    setEditingLesson(l);
-    setEditData({
-      title: l.title,
-      scheduledDate: new Date(l.scheduledDate),
-      duration: l.duration,
-      students: l.students.map((s: any) => (typeof s === 'string' ? s : s._id)),
-    });
-    setEditDialog(true);
+    if (user?.role === 'teacher') {
+      setEditingLesson(l);
+      setEditData({
+        title: l.title,
+        scheduledDate: new Date(l.scheduledDate),
+        duration: l.duration,
+        students: l.students.map((s: any) => (typeof s === 'string' ? s : s._id)),
+      });
+      setEditDialog(true);
+    } else {
+      setSelectedLesson(l);
+      setLessonDialogOpen(true);
+    }
+  };
+
+  const handleConfirmAttendance = async () => {
+    if (!selectedLesson) return;
+    try {
+      await lessonsAPI.confirmAttendance(selectedLesson._id);
+      setLessonDialogOpen(false);
+      setSelectedLesson(null);
+      loadLessons(range?.start, range?.end);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSubmitCancel = async () => {
+    if (!selectedLesson) return;
+    try {
+      await lessonsAPI.requestCancel(selectedLesson._id, { reason });
+      setCancelDialogOpen(false);
+      setSelectedLesson(null);
+      setReason('');
+      loadLessons(range?.start, range?.end);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSubmitReschedule = async () => {
+    if (!selectedLesson || !pendingSlot) return;
+    try {
+      await lessonsAPI.requestReschedule(selectedLesson._id, {
+        reason,
+        newDate: pendingSlot.start.toISOString(),
+      });
+      setRescheduleDialogOpen(false);
+      setSelectedLesson(null);
+      setPendingSlot(null);
+      setReason('');
+      loadLessons(range?.start, range?.end);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -421,6 +481,49 @@ const CalendarPage: React.FC = () => {
             <Button variant="contained" onClick={handleUpdateLesson} disabled={!editData.title || editData.students.length === 0}>
               Save
             </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={lessonDialogOpen} onClose={() => setLessonDialogOpen(false)}>
+          <DialogTitle>{selectedLesson?.title}</DialogTitle>
+          <DialogActions>
+            <Button onClick={handleConfirmAttendance}>I Am Here</Button>
+            <Button onClick={() => { setLessonDialogOpen(false); setReason(''); setCancelDialogOpen(true); }}>Request Cancel</Button>
+            <Button onClick={() => setLessonDialogOpen(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={cancelDialogOpen} onClose={() => setCancelDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Cancel Lesson</DialogTitle>
+          <DialogContent>
+            <TextField
+              fullWidth
+              multiline
+              label="Reason"
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCancelDialogOpen(false)}>Back</Button>
+            <Button variant="contained" onClick={handleSubmitCancel} disabled={!reason.trim()}>Submit</Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={rescheduleDialogOpen} onClose={() => setRescheduleDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Request Reschedule</DialogTitle>
+          <DialogContent>
+            <TextField
+              fullWidth
+              multiline
+              label="Reason"
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setRescheduleDialogOpen(false)}>Back</Button>
+            <Button variant="contained" onClick={handleSubmitReschedule} disabled={!reason.trim()}>Submit</Button>
           </DialogActions>
         </Dialog>
       </Box>
