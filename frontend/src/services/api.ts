@@ -176,6 +176,7 @@ export const studentsAPI = {
     grade?: string;
     school?: string;
     isGraduated?: boolean;
+    isActive?: boolean;
   }): Promise<Student[]> => {
     const response: AxiosResponse<ApiResponse<Student[]>> = await api.get('/students', { params });
     return response.data.data!;

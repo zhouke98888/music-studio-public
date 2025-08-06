@@ -20,6 +20,7 @@ export interface Student extends User {
   fatherName?: string;
   fatherPhone?: string;
   isGraduated: boolean;
+  isActive: boolean;
   teacher?: User;
 }
 

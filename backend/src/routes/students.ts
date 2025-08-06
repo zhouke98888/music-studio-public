@@ -33,7 +33,7 @@ router.post('/:id/assign-teacher', requireRole(['teacher', 'admin']), assignTeac
 // Update student (teachers and admins only)
 router.put('/:id', requireRole(['teacher', 'admin']), updateStudent);
 
-// Delete student (admins only)
-router.delete('/:id', requireRole(['admin']), deleteStudent);
+// Delete (deactivate) student (teachers and admins)
+router.delete('/:id', requireRole(['teacher', 'admin']), deleteStudent);
 
 export default router;

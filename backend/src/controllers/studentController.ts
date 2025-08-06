@@ -7,10 +7,16 @@ import { AuthRequest } from '../middleware/auth';
 // Get all students
 export const getStudents = async (req: AuthRequest, res: Response) => {
   try {
-    const { search, grade, school, isGraduated } = req.query;
-    
+    const { search, grade, school, isGraduated, isActive } = req.query;
+
     // Build query
     const query: any = { role: 'student' };
+
+    if (isActive !== undefined) {
+      query.isActive = isActive === 'true';
+    } else {
+      query.isActive = true;
+    }
 
     // Restrict to the current teacher's students when a teacher is requesting
     if (req.user?.role === 'teacher') {
@@ -233,14 +239,20 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
+    if (req.user?.role === 'teacher' && student.teacher?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    student.isActive = false;
+    await student.save();
+
     if (student.teacher) {
       await Teacher.findByIdAndUpdate(student.teacher, {
         $pull: { students: student._id }
       });
     }
 
-    await student.deleteOne();
-    res.json({ success: true, message: 'Student deleted successfully' });
+    res.json({ success: true, message: 'Student deactivated successfully' });
   } catch (error) {
     console.error('Error deleting student:', error);
     res.status(500).json({ message: 'Server error' });
@@ -291,7 +303,7 @@ export const assignTeacher = async (req: AuthRequest, res: Response) => {
 // Get student stats
 export const getStudentStats = async (req: AuthRequest, res: Response) => {
   try {
-    const matchFilter: any = { role: 'student' };
+    const matchFilter: any = { role: 'student', isActive: true };
     if (req.user?.role === 'teacher') {
       matchFilter.teacher = req.user._id;
     }

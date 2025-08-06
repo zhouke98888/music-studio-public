@@ -97,6 +97,7 @@ const StudentsPage: React.FC = () => {
       if (schoolFilter) params.school = schoolFilter;
       if (graduatedFilter) params.isGraduated = graduatedFilter === 'true';
       
+      params.isActive = true;
       const data = await studentsAPI.getStudents(params);
       setStudents(data);
     } catch (err) {
@@ -426,7 +427,7 @@ const StudentsPage: React.FC = () => {
                       <EditIcon />
                     </IconButton>
                   </Tooltip>
-                    {user?.role === 'admin' && (
+                    {(user?.role === 'admin' || user?.role === 'teacher') && (
                       <Tooltip title="Delete">
                         <IconButton
                           onClick={() => handleDelete(student._id)}
