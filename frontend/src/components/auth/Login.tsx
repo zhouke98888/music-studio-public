@@ -29,6 +29,7 @@ const Login: React.FC = () => {
 
   const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -70,17 +71,19 @@ const Login: React.FC = () => {
     };
 
     const { google } = window;
-    if (google && googleButtonRef.current) {
+    if (google && googleButtonRef.current && googleClientId) {
       google.accounts.id.initialize({
-        client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+        client_id: googleClientId,
         callback: handleCredential,
       });
       google.accounts.id.renderButton(googleButtonRef.current, {
         theme: 'outline',
         width: '100%',
       });
+    } else if (!googleClientId) {
+      console.warn('Google client ID not provided; Google sign-in disabled.');
     }
-  }, [loginWithGoogle, navigate]);
+  }, [googleClientId, loginWithGoogle, navigate]);
 
   return (
     <Container component="main" maxWidth="sm">

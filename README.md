@@ -132,7 +132,7 @@ music-studio/
   Frontend (.env):
   ```bash
   cd frontend
-  # create .env file
+  # create .env file (must be inside the frontend directory)
   ```
 
   Add the following to `frontend/.env`:
@@ -140,6 +140,7 @@ music-studio/
   REACT_APP_API_URL=http://localhost:5001/api
   REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
   ```
+  > **Note:** Environment variables for the React app must live in the `frontend/.env` file. A `.env` placed at the project root will not be picked up by `react-scripts`.
 
 4. **Start MongoDB**
    Make sure MongoDB is running on your system.
