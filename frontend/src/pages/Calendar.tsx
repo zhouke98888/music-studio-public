@@ -233,8 +233,8 @@ const CalendarPage: React.FC = () => {
             if (event.resource.status === 'rescheduling') {
               return { className: 'lesson-rescheduling' };
             }
-            if (event.resource.status === 'cancelling') {
-              return { className: 'lesson-cancelling' };
+            if (event.resource.status === 'cancelled') {
+              return { className: 'lesson-cancelled' };
             }
             return {};
           }}
