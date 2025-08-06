@@ -13,6 +13,7 @@ export interface IStudent extends IUser {
   fatherName?: string;
   fatherPhone?: string;
   isGraduated: boolean;
+  isActive: boolean;
   teacher?: mongoose.Types.ObjectId | ITeacher;
 }
 
@@ -55,6 +56,10 @@ const StudentSchema = new Schema<IStudent>({
   isGraduated: {
     type: Boolean,
     default: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   },
   teacher: {
     type: Schema.Types.ObjectId,

@@ -20,6 +20,7 @@ export interface Student extends User {
   fatherName?: string;
   fatherPhone?: string;
   isGraduated: boolean;
+  isActive: boolean;
   teacher?: User;
 }
 
@@ -115,6 +116,7 @@ export interface RegisterData {
   motherPhone?: string;
   fatherName?: string;
   fatherPhone?: string;
+  teacher?: string;
   // Teacher specific
   specializations?: string[];
   availability?: TeacherAvailability[];

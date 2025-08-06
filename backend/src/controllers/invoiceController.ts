@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Invoice } from '../models/Invoice';
 import { Lesson } from '../models/Lesson';
 import { User } from '../models/User';
+import { Student } from '../models/Student';
 
 export const getInvoices = async (req: Request, res: Response) => {
   try {
@@ -22,14 +23,16 @@ export const getInvoices = async (req: Request, res: Response) => {
     }
 
     const invoices = await Invoice.find(filter)
-      .populate('student', 'firstName lastName email')
+      .populate({ path: 'student', select: 'firstName lastName email', match: { isActive: true } })
       .populate('teacher', 'firstName lastName email rate')
       .populate('lessons', 'title scheduledDate duration')
       .sort({ createdAt: -1 });
 
+    const activeInvoices = invoices.filter(inv => inv.student);
+
     res.json({
       success: true,
-      data: invoices
+      data: activeInvoices
     });
   } catch (error) {
     console.error('Error fetching invoices:', error);
@@ -45,11 +48,11 @@ export const getInvoiceById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const invoice = await Invoice.findById(id)
-      .populate('student', 'firstName lastName email phone')
+      .populate({ path: 'student', select: 'firstName lastName email phone', match: { isActive: true } })
       .populate('teacher', 'firstName lastName email rate')
       .populate('lessons', 'title scheduledDate duration type status');
-    
-    if (!invoice) {
+
+    if (!invoice || !invoice.student) {
       return res.status(404).json({
         success: false,
         message: 'Invoice not found'
@@ -103,9 +106,9 @@ export const createInvoice = async (req: Request, res: Response) => {
       });
     }
 
-    // Validate student exists
-    const studentUser = await User.findById(student);
-    if (!studentUser) {
+    // Validate student exists and is active
+    const studentUser = await Student.findById(student);
+    if (!studentUser || !studentUser.isActive) {
       return res.status(400).json({
         success: false,
         message: 'Student not found'
@@ -145,7 +148,7 @@ export const createInvoice = async (req: Request, res: Response) => {
     await invoice.save();
     
     const populatedInvoice = await Invoice.findById(invoice._id)
-      .populate('student', 'firstName lastName email')
+      .populate({ path: 'student', select: 'firstName lastName email', match: { isActive: true } })
       .populate('teacher', 'firstName lastName email rate')
       .populate('lessons', 'title scheduledDate duration');
     
@@ -185,7 +188,7 @@ export const updateInvoice = async (req: Request, res: Response) => {
     await invoice.save();
     
     const populatedInvoice = await Invoice.findById(invoice._id)
-      .populate('student', 'firstName lastName email')
+      .populate({ path: 'student', select: 'firstName lastName email', match: { isActive: true } })
       .populate('teacher', 'firstName lastName email rate')
       .populate('lessons', 'title scheduledDate duration');
     
@@ -249,7 +252,7 @@ export const markAsPaid = async (req: Request, res: Response) => {
     await invoice.save();
 
     const populatedInvoice = await Invoice.findById(invoice._id)
-      .populate('student', 'firstName lastName email')
+      .populate({ path: 'student', select: 'firstName lastName email', match: { isActive: true } })
       .populate('teacher', 'firstName lastName email rate')
       .populate('lessons', 'title scheduledDate duration');
     

@@ -8,7 +8,8 @@ import {
   Lesson,
   Instrument,
   Invoice,
-  Student
+  Student,
+  Teacher
 } from '../types';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
@@ -175,6 +176,7 @@ export const studentsAPI = {
     grade?: string;
     school?: string;
     isGraduated?: boolean;
+    isActive?: boolean;
   }): Promise<Student[]> => {
     const response: AxiosResponse<ApiResponse<Student[]>> = await api.get('/students', { params });
     return response.data.data!;
@@ -213,6 +215,10 @@ export const studentsAPI = {
 
 // Teachers API
 export const teachersAPI = {
+  getTeachers: async (): Promise<Teacher[]> => {
+    const response: AxiosResponse<ApiResponse<Teacher[]>> = await api.get('/teachers/public');
+    return response.data.data!;
+  },
   getTeacherStudents: async (id: string): Promise<Student[]> => {
     const response: AxiosResponse<ApiResponse<Student[]>> = await api.get(`/teachers/${id}/students`);
     return response.data.data!;

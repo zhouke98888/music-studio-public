@@ -24,7 +24,7 @@ export const getInstruments = async (req: AuthRequest, res: Response) => {
     }
 
     const instruments = await Instrument.find(query)
-      .populate('currentBorrower', 'firstName lastName email')
+      .populate({ path: 'currentBorrower', select: 'firstName lastName email', match: { isActive: true } })
       .sort({ name: 1 });
 
     res.json({
@@ -45,7 +45,7 @@ export const getInstrumentById = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
     const instrument = await Instrument.findById(id)
-      .populate('currentBorrower', 'firstName lastName email phone');
+      .populate({ path: 'currentBorrower', select: 'firstName lastName email phone', match: { isActive: true } });
 
     if (!instrument) {
       return res.status(404).json({
@@ -105,7 +105,7 @@ export const checkOutInstrument = async (req: AuthRequest, res: Response) => {
 
     await instrument.save();
 
-    const updatedInstrument = await instrument.populate('currentBorrower', 'firstName lastName email');
+    const updatedInstrument = await instrument.populate({ path: 'currentBorrower', select: 'firstName lastName email', match: { isActive: true } });
 
     res.json({
       success: true,
@@ -260,7 +260,7 @@ export const updateInstrument = async (req: AuthRequest, res: Response) => {
       id,
       updates,
       { new: true, runValidators: true }
-    ).populate('currentBorrower', 'firstName lastName email');
+    ).populate({ path: 'currentBorrower', select: 'firstName lastName email', match: { isActive: true } });
 
     if (!instrument) {
       return res.status(404).json({

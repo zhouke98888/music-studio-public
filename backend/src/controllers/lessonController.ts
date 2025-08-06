@@ -34,12 +34,19 @@ export const getLessons = async (req: AuthRequest, res: Response) => {
 
     const lessons = await Lesson.find(query)
       .populate('teacher', 'firstName lastName email')
-      .populate('students', 'firstName lastName email')
+      .populate({ path: 'students', select: 'firstName lastName email', match: { isActive: true } })
       .sort({ scheduledDate: 1 });
+
+    const activeLessons = lessons
+      .map(lesson => {
+        lesson.students = lesson.students.filter(Boolean);
+        return lesson;
+      })
+      .filter(lesson => lesson.students.length > 0);
 
     res.json({
       success: true,
-      data: lessons
+      data: activeLessons
     });
   } catch (error) {
     console.error('Get lessons error:', error);
@@ -58,9 +65,17 @@ export const getLessonById = async (req: AuthRequest, res: Response) => {
 
     const lesson = await Lesson.findById(id)
       .populate('teacher', 'firstName lastName email')
-      .populate('students', 'firstName lastName email');
+      .populate({ path: 'students', select: 'firstName lastName email', match: { isActive: true } });
 
     if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lesson not found'
+      });
+    }
+
+    lesson.students = lesson.students.filter(Boolean);
+    if (lesson.students.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'Lesson not found'
