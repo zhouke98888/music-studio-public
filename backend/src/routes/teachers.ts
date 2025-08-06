@@ -3,10 +3,13 @@ import { authenticate, requireRole } from '../middleware/auth';
 import {
   getTeachers,
   getTeacherById,
-  getTeacherStudents
+  getTeacherStudents,
+  getPublicTeachers,
 } from '../controllers/teacherController';
 
 const router = express.Router();
+
+router.get('/public', getPublicTeachers);
 
 router.use(authenticate);
 

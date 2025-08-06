@@ -28,6 +28,7 @@ export const register = async (req: Request, res: Response) => {
       motherPhone,
       fatherName,
       fatherPhone,
+      teacher: teacherId,
       // Teacher specific fields
       specializations,
       availability
@@ -62,7 +63,8 @@ export const register = async (req: Request, res: Response) => {
         motherName,
         motherPhone,
         fatherName,
-        fatherPhone
+        fatherPhone,
+        teacher: teacherId
       });
     } else if (role === 'teacher') {
       user = new Teacher({
@@ -87,6 +89,10 @@ export const register = async (req: Request, res: Response) => {
     }
 
     await user.save();
+
+    if (role === 'student' && teacherId) {
+      await Teacher.findByIdAndUpdate(teacherId, { $addToSet: { students: user._id } });
+    }
 
     const token = generateToken((user._id as any).toString());
 
