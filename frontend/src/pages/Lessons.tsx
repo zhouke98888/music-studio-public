@@ -203,9 +203,10 @@ const Lessons: React.FC = () => {
     }
   };
 
-  const openActionDialog = (lesson: Lesson, type: any) => {
+  const openActionDialog = (lesson: Lesson, type: any, data: any = {}) => {
     setSelectedLesson(lesson);
     setActionType(type);
+    setActionData(data);
     setActionDialogOpen(true);
   };
 
@@ -321,7 +322,7 @@ const Lessons: React.FC = () => {
                     size="small"
                     variant="contained"
                     color="success"
-                    onClick={() => openActionDialog(lesson, 'approve-reschedule')}
+                    onClick={() => openActionDialog(lesson, 'approve-reschedule', { approved: true })}
                   >
                     Approve Reschedule
                   </Button>
@@ -329,7 +330,7 @@ const Lessons: React.FC = () => {
                     size="small"
                     variant="outlined"
                     color="error"
-                    onClick={() => openActionDialog(lesson, 'approve-reschedule')}
+                    onClick={() => openActionDialog(lesson, 'approve-reschedule', { approved: false })}
                   >
                     Deny Reschedule
                   </Button>
@@ -341,7 +342,7 @@ const Lessons: React.FC = () => {
                     size="small"
                     variant="contained"
                     color="success"
-                    onClick={() => openActionDialog(lesson, 'approve-cancel')}
+                    onClick={() => openActionDialog(lesson, 'approve-cancel', { approved: true })}
                   >
                     Approve Cancel
                   </Button>
@@ -349,7 +350,7 @@ const Lessons: React.FC = () => {
                     size="small"
                     variant="outlined"
                     color="error"
-                    onClick={() => openActionDialog(lesson, 'approve-cancel')}
+                    onClick={() => openActionDialog(lesson, 'approve-cancel', { approved: false })}
                   >
                     Deny Cancel
                   </Button>
@@ -537,8 +538,8 @@ const Lessons: React.FC = () => {
             {actionType === 'confirm' && 'I am Here'}
             {actionType === 'reschedule' && 'Request Reschedule'}
             {actionType === 'cancel' && 'Request Cancellation'}
-            {actionType === 'approve-reschedule' && 'Approve Reschedule'}
-            {actionType === 'approve-cancel' && 'Approve Cancellation'}
+            {actionType === 'approve-reschedule' && (actionData.approved ? 'Approve Reschedule' : 'Deny Reschedule')}
+            {actionType === 'approve-cancel' && (actionData.approved ? 'Approve Cancellation' : 'Deny Cancellation')}
           </DialogTitle>
           <DialogContent>
             {(actionType === 'reschedule' || actionType === 'cancel') && (
@@ -563,19 +564,21 @@ const Lessons: React.FC = () => {
             {actionType === 'approve-reschedule' && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" gutterBottom>
-                  Do you want to approve this reschedule request?
+                  {actionData.approved ? 'Do you want to approve this reschedule request?' : 'Do you want to deny this reschedule request?'}
                 </Typography>
-                <DateTimePicker
-                  label="New Date & Time (optional)"
-                  value={actionData.newDate || null}
-                  onChange={(date) => setActionData({ ...actionData, newDate: date })}
-                  slotProps={{ textField: { fullWidth: true, sx: { mt: 2 } } }}
-                />
+                {actionData.approved && (
+                  <DateTimePicker
+                    label="New Date & Time (optional)"
+                    value={actionData.newDate || null}
+                    onChange={(date) => setActionData({ ...actionData, newDate: date })}
+                    slotProps={{ textField: { fullWidth: true, sx: { mt: 2 } } }}
+                  />
+                )}
               </Box>
             )}
             {actionType === 'approve-cancel' && (
               <Typography variant="body2" sx={{ mt: 2 }}>
-                Do you want to approve this cancellation request?
+                {actionData.approved ? 'Do you want to approve this cancellation request?' : 'Do you want to deny this cancellation request?'}
               </Typography>
             )}
           </DialogContent>
