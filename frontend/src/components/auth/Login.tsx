@@ -1,4 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 import {
   Box,
   Paper,
@@ -10,7 +16,6 @@ import {
   Divider,
   Link,
 } from '@mui/material';
-import { Google as GoogleIcon } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 
@@ -22,7 +27,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,10 +52,35 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth
-    setError('Google login not implemented yet');
-  };
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleCredential = async (response: any) => {
+      if (!response?.credential) return;
+      setError('');
+      setLoading(true);
+      try {
+        await loginWithGoogle(response.credential);
+        navigate('/dashboard');
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const { google } = window;
+    if (google && googleButtonRef.current) {
+      google.accounts.id.initialize({
+        client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+        callback: handleCredential,
+      });
+      google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        width: '100%',
+      });
+    }
+  }, [loginWithGoogle, navigate]);
 
   return (
     <Container component="main" maxWidth="sm">
@@ -109,15 +139,7 @@ const Login: React.FC = () => {
 
             <Divider sx={{ my: 2 }}>OR</Divider>
 
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<GoogleIcon />}
-              onClick={handleGoogleLogin}
-              sx={{ mb: 2 }}
-            >
-              Sign in with Google
-            </Button>
+            <Box ref={googleButtonRef} sx={{ mb: 2, display: 'flex', justifyContent: 'center' }} />
 
             <Box textAlign="center">
               <Link component={RouterLink} to="/register" variant="body2">

@@ -10,6 +10,7 @@ const generateToken = (userId: string): string => {
   return jwt.sign({ userId }, jwtSecret, { expiresIn: '7d' });
 };
 
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { 
@@ -156,6 +157,78 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Server error during login'
+    });
+  }
+};
+
+export const googleLogin = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google token is required'
+      });
+    }
+
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
+    const payload: any = await verifyRes.json();
+
+    if (payload.error_description || payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Google token'
+      });
+    }
+
+    const { sub: googleId, email, given_name: firstName, family_name: lastName } = payload;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google account has no email'
+      });
+    }
+
+    let user: any = await User.findOne({ $or: [{ googleId }, { email }] });
+
+    if (!user) {
+      user = new User({
+        email,
+        username: email,
+        firstName: firstName || 'Google',
+        lastName: lastName || 'User',
+        role: 'student',
+        googleId
+      });
+      await user.save();
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      await user.save();
+    }
+
+    const jwtToken = generateToken((user._id as any).toString());
+
+    res.json({
+      success: true,
+      data: {
+        token: jwtToken,
+        user: {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during Google login'
     });
   }
 };

@@ -51,6 +51,11 @@ export const authAPI = {
     return response.data.data!;
   },
 
+  googleLogin: async (token: string): Promise<AuthResponse> => {
+    const response: AxiosResponse<ApiResponse<AuthResponse>> = await api.post('/auth/google', { token });
+    return response.data.data!;
+  },
+
   register: async (userData: RegisterData): Promise<AuthResponse> => {
     const response: AxiosResponse<ApiResponse<AuthResponse>> = await api.post('/auth/register', userData);
     return response.data.data!;
