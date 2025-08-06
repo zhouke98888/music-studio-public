@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -10,9 +10,14 @@ import {
   Divider,
   Link,
 } from '@mui/material';
-import { Google as GoogleIcon } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -22,8 +27,9 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -47,10 +53,37 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // TODO: Implement Google OAuth
-    setError('Google login not implemented yet');
-  };
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleCredential = async (response: any) => {
+      if (!response?.credential) return;
+      setError('');
+      setLoading(true);
+      try {
+        await loginWithGoogle(response.credential);
+        navigate('/dashboard');
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const { google } = window;
+    if (google && googleButtonRef.current && googleClientId) {
+      google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: handleCredential,
+      });
+      google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        width: '100%',
+      });
+    } else if (!googleClientId) {
+      console.warn('Google client ID not provided; Google sign-in disabled.');
+    }
+  }, [googleClientId, loginWithGoogle, navigate]);
 
   return (
     <Container component="main" maxWidth="sm">
@@ -109,15 +142,11 @@ const Login: React.FC = () => {
 
             <Divider sx={{ my: 2 }}>OR</Divider>
 
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<GoogleIcon />}
-              onClick={handleGoogleLogin}
-              sx={{ mb: 2 }}
-            >
-              Sign in with Google
-            </Button>
+            <Typography variant="body2" align="center" sx={{ mb: 1 }}>
+              Teachers can sign in with Google
+            </Typography>
+
+            <Box ref={googleButtonRef} sx={{ mb: 2, display: 'flex', justifyContent: 'center' }} />
 
             <Box textAlign="center">
               <Link component={RouterLink} to="/register" variant="body2">

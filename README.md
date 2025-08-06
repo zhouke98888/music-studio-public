@@ -5,7 +5,7 @@ A comprehensive web application for managing music studio operations, including 
 ## Features
 
 ### Student Portal
-- **Login & Authentication**: Login with username/password or Google account
+- **Login & Authentication**: Login with username/password
 - **Lesson Management**: 
   - View scheduled lessons
   - Filter lessons by date range
@@ -20,6 +20,7 @@ A comprehensive web application for managing music studio operations, including 
   - View instrument details
 
 ### Teacher Portal
+- **Login & Authentication**: Login with username/password or Google account
 - **Student Management**:
   - View and edit student details (name, birthday, grade, school, contact info)
   - Add new students
@@ -119,14 +120,28 @@ music-studio/
    cp .env.example .env
    ```
    
-   Edit `backend/.env` with your configuration:
-   ```
-   PORT=5000
-   NODE_ENV=development
-   MONGODB_URI=mongodb://localhost:27017/music-studio
-   JWT_SECRET=your-super-secret-jwt-key
-   FRONTEND_URL=http://localhost:3000
-   ```
+  Edit `backend/.env` with your configuration:
+  ```
+  PORT=5000
+  NODE_ENV=development
+  MONGODB_URI=mongodb://localhost:27017/music-studio
+  JWT_SECRET=your-super-secret-jwt-key
+  FRONTEND_URL=http://localhost:3000
+  GOOGLE_CLIENT_ID=your-google-client-id # used for teacher Google sign-in
+  ```
+
+  Frontend (.env):
+  ```bash
+  cd frontend
+  # create .env file (must be inside the frontend directory)
+  ```
+
+  Add the following to `frontend/.env`:
+  ```
+  REACT_APP_API_URL=http://localhost:5001/api
+  REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id # used for teacher Google sign-in
+  ```
+  > **Note:** Environment variables for the React app must live in the `frontend/.env` file. A `.env` placed at the project root will not be picked up by `react-scripts`.
 
 4. **Start MongoDB**
    Make sure MongoDB is running on your system.
