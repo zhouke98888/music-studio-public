@@ -194,15 +194,22 @@ export const googleLogin = async (req: Request, res: Response) => {
     let user: any = await User.findOne({ $or: [{ googleId }, { email }] });
 
     if (!user) {
-      user = new User({
+      user = new Teacher({
         email,
         username: email,
         firstName: firstName || 'Google',
         lastName: lastName || 'User',
-        role: 'student',
+        role: 'teacher',
+        specializations: [],
+        availability: [],
         googleId
       });
       await user.save();
+    } else if (user.role !== 'teacher') {
+      return res.status(403).json({
+        success: false,
+        message: 'Google login is only available for teachers'
+      });
     } else if (!user.googleId) {
       user.googleId = googleId;
       await user.save();

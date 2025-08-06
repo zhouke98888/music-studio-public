@@ -142,6 +142,10 @@ const Login: React.FC = () => {
 
             <Divider sx={{ my: 2 }}>OR</Divider>
 
+            <Typography variant="body2" align="center" sx={{ mb: 1 }}>
+              Teachers can sign in with Google
+            </Typography>
+
             <Box ref={googleButtonRef} sx={{ mb: 2, display: 'flex', justifyContent: 'center' }} />
 
             <Box textAlign="center">
