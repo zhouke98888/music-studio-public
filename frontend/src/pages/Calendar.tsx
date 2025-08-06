@@ -93,6 +93,16 @@ const CalendarPage: React.FC = () => {
   const [reason, setReason] = useState('');
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
 
+  const canModify = (lesson: Lesson) => {
+    if (user?.role === 'teacher') return true;
+    if (user?.role === 'student') {
+      return lesson.students.some((s: any) => (
+        typeof s === 'string' ? s : s._id
+      ) === user._id);
+    }
+    return false;
+  };
+
   const loadLessons = async (start?: Date, end?: Date) => {
     const params: any = {};
     if (start && end) {
@@ -135,6 +145,10 @@ const CalendarPage: React.FC = () => {
   }, [lessons]);
 
   const handleEventDrop = async ({ event, start, end }: any) => {
+    if (!canModify(event.resource)) {
+      loadLessons(range?.start, range?.end);
+      return;
+    }
     if (user?.role === 'teacher') {
       try {
         await lessonsAPI.updateLesson(event.resource._id, {
@@ -238,7 +252,7 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleConfirmAttendance = async () => {
-    if (!selectedLesson) return;
+    if (!selectedLesson || !canModify(selectedLesson)) return;
     try {
       await lessonsAPI.confirmAttendance(selectedLesson._id);
       setLessonDialogOpen(false);
@@ -250,7 +264,7 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleSubmitCancel = async () => {
-    if (!selectedLesson) return;
+    if (!selectedLesson || !canModify(selectedLesson)) return;
     try {
       await lessonsAPI.requestCancel(selectedLesson._id, { reason });
       setCancelDialogOpen(false);
@@ -263,7 +277,7 @@ const CalendarPage: React.FC = () => {
   };
 
   const handleSubmitReschedule = async () => {
-    if (!selectedLesson || !pendingSlot) return;
+    if (!selectedLesson || !pendingSlot || !canModify(selectedLesson)) return;
     try {
       await lessonsAPI.requestReschedule(selectedLesson._id, {
         reason,
@@ -289,6 +303,8 @@ const CalendarPage: React.FC = () => {
           date={currentDate}
           view={view}
           selectable={user?.role === 'teacher'}
+          draggableAccessor={(event) => canModify(event.resource)}
+          resizableAccessor={(event) => canModify(event.resource)}
           eventPropGetter={(event) => {
             if (event.resource.status === 'rescheduling') {
               return { className: 'lesson-rescheduling' };
@@ -484,11 +500,55 @@ const CalendarPage: React.FC = () => {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={lessonDialogOpen} onClose={() => setLessonDialogOpen(false)}>
+        <Dialog open={lessonDialogOpen} onClose={() => setLessonDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>{selectedLesson?.title}</DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="body1" gutterBottom>
+              {selectedLesson && format(new Date(selectedLesson.scheduledDate), 'PPpp')} ({selectedLesson?.duration} min)
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              Teacher: {selectedLesson?.teacher?.firstName} {selectedLesson?.teacher?.lastName}
+            </Typography>
+            {selectedLesson?.location && (
+              <Typography variant="body2" gutterBottom>
+                Location: {selectedLesson.location}
+              </Typography>
+            )}
+            {selectedLesson?.description && (
+              <Typography variant="body2" gutterBottom>
+                {selectedLesson.description}
+              </Typography>
+            )}
+          </DialogContent>
           <DialogActions>
-            <Button onClick={handleConfirmAttendance}>I Am Here</Button>
-            <Button onClick={() => { setLessonDialogOpen(false); setReason(''); setCancelDialogOpen(true); }}>Request Cancel</Button>
+            {selectedLesson && canModify(selectedLesson) && (
+              <>
+                <Button onClick={handleConfirmAttendance}>I Am Here</Button>
+                <Button
+                  onClick={() => {
+                    if (!selectedLesson) return;
+                    setLessonDialogOpen(false);
+                    setPendingSlot({
+                      start: new Date(selectedLesson.scheduledDate),
+                      end: new Date(new Date(selectedLesson.scheduledDate).getTime() + selectedLesson.duration * 60000),
+                    });
+                    setReason('');
+                    setRescheduleDialogOpen(true);
+                  }}
+                >
+                  Request Reschedule
+                </Button>
+                <Button
+                  onClick={() => {
+                    setLessonDialogOpen(false);
+                    setReason('');
+                    setCancelDialogOpen(true);
+                  }}
+                >
+                  Request Cancel
+                </Button>
+              </>
+            )}
             <Button onClick={() => setLessonDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
@@ -513,17 +573,34 @@ const CalendarPage: React.FC = () => {
         <Dialog open={rescheduleDialogOpen} onClose={() => setRescheduleDialogOpen(false)} maxWidth="sm" fullWidth>
           <DialogTitle>Request Reschedule</DialogTitle>
           <DialogContent>
-            <TextField
-              fullWidth
-              multiline
-              label="Reason"
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-            />
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid size={{ xs: 12 }}>
+                <DateTimePicker
+                  label="New Date & Time"
+                  value={pendingSlot?.start || (selectedLesson ? new Date(selectedLesson.scheduledDate) : new Date())}
+                  onChange={date =>
+                    setPendingSlot({
+                      start: date || new Date(),
+                      end: new Date((date || new Date()).getTime() + (selectedLesson?.duration || 60) * 60000),
+                    })
+                  }
+                  slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  label="Reason"
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                />
+              </Grid>
+            </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setRescheduleDialogOpen(false)}>Back</Button>
-            <Button variant="contained" onClick={handleSubmitReschedule} disabled={!reason.trim()}>Submit</Button>
+            <Button variant="contained" onClick={handleSubmitReschedule} disabled={!reason.trim() || !pendingSlot}>Submit</Button>
           </DialogActions>
         </Dialog>
       </Box>
