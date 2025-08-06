@@ -228,12 +228,18 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
 export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
     const student = await Student.findById(req.params.id);
-    
+
     if (!student) {
       return res.status(404).json({ success: false, message: 'Student not found' });
     }
 
-    await Student.findByIdAndDelete(req.params.id);
+    if (student.teacher) {
+      await Teacher.findByIdAndUpdate(student.teacher, {
+        $pull: { students: student._id }
+      });
+    }
+
+    await student.deleteOne();
     res.json({ success: true, message: 'Student deleted successfully' });
   } catch (error) {
     console.error('Error deleting student:', error);

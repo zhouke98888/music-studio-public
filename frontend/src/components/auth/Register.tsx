@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -20,7 +20,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { RegisterData } from '../../types';
+import { RegisterData, Teacher } from '../../types';
+import { teachersAPI } from '../../services/api';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState<RegisterData>({
@@ -39,15 +40,29 @@ const Register: React.FC = () => {
     motherPhone: '',
     fatherName: '',
     fatherPhone: '',
+    teacher: '',
     // Teacher fields
     specializations: [],
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [birthDate, setBirthDate] = useState<Date | null>(null);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const loadTeachers = async () => {
+      try {
+        const data = await teachersAPI.getTeachers();
+        setTeachers(data);
+      } catch (err) {
+        // ignore
+      }
+    };
+    loadTeachers();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
     const name = e.target.name as keyof RegisterData;
@@ -59,15 +74,14 @@ const Register: React.FC = () => {
     });
   };
 
-  const handleSelectChange = (e: SelectChangeEvent<"student" | "teacher">) => {
+  const handleSelectChange = (e: SelectChangeEvent) => {
     const name = e.target.name as keyof RegisterData;
     const value = e.target.value;
-    
     setFormData({
       ...formData,
       [name]: value,
     });
-  };  
+  };
 
   const handleDateChange = (date: Date | null) => {
     setBirthDate(date);
@@ -186,6 +200,23 @@ const Register: React.FC = () => {
                 {/* Student-specific fields */}
                 {formData.role === 'student' && (
                   <>
+                    <Grid size={{ xs: 12, sm: 6 }}>
+                      <FormControl fullWidth required>
+                        <InputLabel>Teacher</InputLabel>
+                        <Select
+                          name="teacher"
+                          value={formData.teacher}
+                          label="Teacher"
+                          onChange={handleSelectChange}
+                        >
+                          {teachers.map((t) => (
+                            <MenuItem key={t._id} value={t._id}>
+                              {t.firstName} {t.lastName}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <DatePicker
                         label="Birth Date"

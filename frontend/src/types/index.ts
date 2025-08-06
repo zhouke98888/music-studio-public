@@ -115,6 +115,7 @@ export interface RegisterData {
   motherPhone?: string;
   fatherName?: string;
   fatherPhone?: string;
+  teacher?: string;
   // Teacher specific
   specializations?: string[];
   availability?: TeacherAvailability[];
