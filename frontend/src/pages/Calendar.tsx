@@ -12,6 +12,7 @@ import {
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import './Calendar.css';
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth } from 'date-fns';
 import { View } from 'react-big-calendar';
 import { enUS } from 'date-fns/locale';
@@ -228,6 +229,15 @@ const CalendarPage: React.FC = () => {
           date={currentDate}
           view={view}
           selectable={user?.role === 'teacher'}
+          eventPropGetter={(event) => {
+            if (event.resource.status === 'rescheduling') {
+              return { className: 'lesson-rescheduling' };
+            }
+            if (event.resource.status === 'cancelled') {
+              return { className: 'lesson-cancelled' };
+            }
+            return {};
+          }}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventDrop}
           resizable
