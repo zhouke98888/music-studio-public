@@ -91,6 +91,7 @@ const CalendarPage: React.FC = () => {
   const [lessonDialogOpen, setLessonDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
 
@@ -216,7 +217,7 @@ const CalendarPage: React.FC = () => {
       });
       setEditDialog(false);
       setEditingLesson(null);
-      loadLessons();
+      loadLessons(range?.start, range?.end);
     } catch (err) {
       console.error(err);
     }
@@ -229,7 +230,36 @@ const CalendarPage: React.FC = () => {
       await lessonsAPI.deleteLesson(editingLesson._id);
       setEditDialog(false);
       setEditingLesson(null);
-      loadLessons();
+      loadLessons(range?.start, range?.end);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCancelLesson = async () => {
+    if (!editingLesson) return;
+    if (!window.confirm('Cancel this lesson?')) return;
+    try {
+      await lessonsAPI.updateLesson(editingLesson._id, { status: 'cancelled' });
+      setEditDialog(false);
+      setEditingLesson(null);
+      loadLessons(range?.start, range?.end);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleApproveRequest = async (approved: boolean) => {
+    if (!editingLesson) return;
+    try {
+      if (editingLesson.status === 'rescheduling') {
+        await lessonsAPI.approveReschedule(editingLesson._id, { approved });
+      } else if (editingLesson.status === 'cancelling') {
+        await lessonsAPI.approveCancel(editingLesson._id, { approved });
+      }
+      setReviewDialogOpen(false);
+      setEditingLesson(null);
+      loadLessons(range?.start, range?.end);
     } catch (err) {
       console.error(err);
     }
@@ -239,13 +269,17 @@ const CalendarPage: React.FC = () => {
     const l = event.resource;
     if (user?.role === 'teacher') {
       setEditingLesson(l);
-      setEditData({
-        title: l.title,
-        scheduledDate: new Date(l.scheduledDate),
-        duration: l.duration,
-        students: l.students.map((s: any) => (typeof s === 'string' ? s : s._id)),
-      });
-      setEditDialog(true);
+      if (l.status === 'rescheduling' || l.status === 'cancelling') {
+        setReviewDialogOpen(true);
+      } else {
+        setEditData({
+          title: l.title,
+          scheduledDate: new Date(l.scheduledDate),
+          duration: l.duration,
+          students: l.students.map((s: any) => (typeof s === 'string' ? s : s._id)),
+        });
+        setEditDialog(true);
+      }
     } else {
       setSelectedLesson(l);
       setLessonDialogOpen(true);
@@ -310,6 +344,9 @@ const CalendarPage: React.FC = () => {
             const classes = [] as string[];
             if (event.resource.status === 'rescheduling') {
               classes.push('lesson-rescheduling');
+            }
+            if (event.resource.status === 'cancelling') {
+              classes.push('lesson-cancelling');
             }
             if (event.resource.status === 'cancelled') {
               classes.push('lesson-cancelled');
@@ -497,11 +534,36 @@ const CalendarPage: React.FC = () => {
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setEditDialog(false)}>Cancel</Button>
+            <Button onClick={() => setEditDialog(false)}>Close</Button>
+            <Button color="error" onClick={handleCancelLesson}>Cancel Lesson</Button>
             <Button color="error" onClick={handleDeleteLesson}>Delete</Button>
             <Button variant="contained" onClick={handleUpdateLesson} disabled={!editData.title || editData.students.length === 0}>
               Save
             </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog open={reviewDialogOpen} onClose={() => setReviewDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>
+            {editingLesson?.status === 'rescheduling' ? 'Reschedule Request' : 'Cancellation Request'}
+          </DialogTitle>
+          <DialogContent dividers>
+            <Typography variant="body1" gutterBottom>
+              {editingLesson && format(new Date(editingLesson.scheduledDate), 'PPpp')} ({editingLesson?.duration} min)
+            </Typography>
+            {editingLesson?.status === 'rescheduling' ? (
+              <Typography variant="body2" gutterBottom>
+                Reason: {editingLesson?.rescheduleReason}
+              </Typography>
+            ) : (
+              <Typography variant="body2" gutterBottom>
+                Reason: {editingLesson?.cancelReason}
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => handleApproveRequest(false)}>Deny</Button>
+            <Button variant="contained" onClick={() => handleApproveRequest(true)}>Approve</Button>
           </DialogActions>
         </Dialog>
 
