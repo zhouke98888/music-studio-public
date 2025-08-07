@@ -22,3 +22,9 @@
   transform: translateY(-50%);
   pointer-events: none;
 }
+
+.rbc-event.lesson-readonly {
+  background-color: #e0e0e0;
+  border: 1px solid #bdbdbd;
+  color: #616161;
+}

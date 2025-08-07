@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, ButtonGroup, Typography, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { CheckCircle as CheckCircleIcon, Schedule as ScheduleIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -306,13 +307,17 @@ const CalendarPage: React.FC = () => {
           draggableAccessor={(event) => canModify(event.resource)}
           resizableAccessor={(event) => canModify(event.resource)}
           eventPropGetter={(event) => {
+            const classes = [] as string[];
             if (event.resource.status === 'rescheduling') {
-              return { className: 'lesson-rescheduling' };
+              classes.push('lesson-rescheduling');
             }
             if (event.resource.status === 'cancelled') {
-              return { className: 'lesson-cancelled' };
+              classes.push('lesson-cancelled');
             }
-            return {};
+            if (user?.role === 'student' && !canModify(event.resource)) {
+              classes.push('lesson-readonly');
+            }
+            return { className: classes.join(' ') };
           }}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventDrop}
@@ -521,10 +526,19 @@ const CalendarPage: React.FC = () => {
             )}
           </DialogContent>
           <DialogActions>
-            {selectedLesson && canModify(selectedLesson) && (
+            {selectedLesson && user?.role === 'student' && (
               <>
-                <Button onClick={handleConfirmAttendance}>I Am Here</Button>
                 <Button
+                  variant="contained"
+                  startIcon={<CheckCircleIcon />}
+                  onClick={handleConfirmAttendance}
+                  disabled={!canModify(selectedLesson)}
+                >
+                  I Am Here
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<ScheduleIcon />}
                   onClick={() => {
                     if (!selectedLesson) return;
                     setLessonDialogOpen(false);
@@ -535,15 +549,20 @@ const CalendarPage: React.FC = () => {
                     setReason('');
                     setRescheduleDialogOpen(true);
                   }}
+                  disabled={!canModify(selectedLesson)}
                 >
                   Request Reschedule
                 </Button>
                 <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<CancelIcon />}
                   onClick={() => {
                     setLessonDialogOpen(false);
                     setReason('');
                     setCancelDialogOpen(true);
                   }}
+                  disabled={!canModify(selectedLesson)}
                 >
                   Request Cancel
                 </Button>
