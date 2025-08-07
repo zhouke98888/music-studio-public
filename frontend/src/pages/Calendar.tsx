@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, ButtonGroup, Typography, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Button, ButtonGroup, Typography, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Stack } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, Schedule as ScheduleIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -20,6 +20,7 @@ import { enUS } from 'date-fns/locale';
 import { lessonsAPI, teachersAPI } from '../services/api';
 import { Lesson, Student } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const locales = {
   'en-US': enUS,
@@ -59,6 +60,8 @@ const CustomToolbar: React.FC<any> = ({ label, onNavigate, onView, view }) => (
 
 const CalendarPage: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [events, setEvents] = useState<LessonEvent[]>([]);
   const [createDialog, setCreateDialog] = useState(false);
@@ -94,6 +97,15 @@ const CalendarPage: React.FC = () => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
+  const [pendingDuration, setPendingDuration] = useState<number>(60);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('new') === '1') {
+      setCreateDialog(true);
+      navigate('/lessons', { replace: true });
+    }
+  }, [location.search, navigate]);
 
   const canModify = (lesson: Lesson) => {
     if (user?.role === 'teacher') return true;
@@ -223,19 +235,6 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const handleDeleteLesson = async () => {
-    if (!editingLesson) return;
-    if (!window.confirm('Delete this lesson?')) return;
-    try {
-      await lessonsAPI.deleteLesson(editingLesson._id);
-      setEditDialog(false);
-      setEditingLesson(null);
-      loadLessons(range?.start, range?.end);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleCancelLesson = async () => {
     if (!editingLesson) return;
     if (!window.confirm('Cancel this lesson?')) return;
@@ -252,10 +251,19 @@ const CalendarPage: React.FC = () => {
   const handleApproveRequest = async (approved: boolean) => {
     if (!editingLesson) return;
     try {
-      if (editingLesson.status === 'rescheduling') {
-        await lessonsAPI.approveReschedule(editingLesson._id, { approved });
-      } else if (editingLesson.status === 'cancelling') {
-        await lessonsAPI.approveCancel(editingLesson._id, { approved });
+      if (approved) {
+        if (editingLesson.status === 'rescheduling') {
+          await lessonsAPI.approveReschedule(editingLesson._id, {
+            approved: true,
+            newDate: new Date(editingLesson.scheduledDate).toISOString(),
+            newDuration: editingLesson.duration,
+          });
+        } else if (editingLesson.status === 'cancelling') {
+          await lessonsAPI.approveCancel(editingLesson._id, { approved: true });
+        }
+      } else {
+        if (!window.confirm('Cancel this lesson?')) return;
+        await lessonsAPI.approveCancel(editingLesson._id, { approved: true });
       }
       setReviewDialogOpen(false);
       setEditingLesson(null);
@@ -317,10 +325,12 @@ const CalendarPage: React.FC = () => {
       await lessonsAPI.requestReschedule(selectedLesson._id, {
         reason,
         newDate: pendingSlot.start.toISOString(),
+        newDuration: pendingDuration,
       });
       setRescheduleDialogOpen(false);
       setSelectedLesson(null);
       setPendingSlot(null);
+      setPendingDuration(60);
       setReason('');
       loadLessons(range?.start, range?.end);
     } catch (e) {
@@ -337,11 +347,14 @@ const CalendarPage: React.FC = () => {
           components={{ toolbar: CustomToolbar }}
           date={currentDate}
           view={view}
+          min={new Date(1970, 0, 1, 7, 0)}
+          max={new Date(1970, 0, 1, 21, 0)}
           selectable={user?.role === 'teacher'}
           draggableAccessor={(event) => canModify(event.resource)}
           resizableAccessor={(event) => canModify(event.resource)}
           eventPropGetter={(event) => {
             const classes = [] as string[];
+            const style: React.CSSProperties = {};
             if (event.resource.status === 'rescheduling') {
               classes.push('lesson-rescheduling');
             }
@@ -350,11 +363,14 @@ const CalendarPage: React.FC = () => {
             }
             if (event.resource.status === 'cancelled') {
               classes.push('lesson-cancelled');
+              if (view === 'agenda') {
+                style.textDecoration = 'line-through';
+              }
             }
             if (user?.role === 'student' && !canModify(event.resource)) {
               classes.push('lesson-readonly');
             }
-            return { className: classes.join(' ') };
+            return { className: classes.join(' '), style };
           }}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventDrop}
@@ -536,8 +552,11 @@ const CalendarPage: React.FC = () => {
           <DialogActions>
             <Button onClick={() => setEditDialog(false)}>Close</Button>
             <Button color="error" onClick={handleCancelLesson}>Cancel Lesson</Button>
-            <Button color="error" onClick={handleDeleteLesson}>Delete</Button>
-            <Button variant="contained" onClick={handleUpdateLesson} disabled={!editData.title || editData.students.length === 0}>
+            <Button
+              variant="contained"
+              onClick={handleUpdateLesson}
+              disabled={!editData.title || editData.students.length === 0}
+            >
               Save
             </Button>
           </DialogActions>
@@ -589,17 +608,19 @@ const CalendarPage: React.FC = () => {
           </DialogContent>
           <DialogActions>
             {selectedLesson && user?.role === 'student' && (
-              <>
+              <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
+                  size="small"
                   startIcon={<CheckCircleIcon />}
                   onClick={handleConfirmAttendance}
                   disabled={!canModify(selectedLesson)}
                 >
-                  I Am Here
+                  I'm Here
                 </Button>
                 <Button
                   variant="outlined"
+                  size="small"
                   startIcon={<ScheduleIcon />}
                   onClick={() => {
                     if (!selectedLesson) return;
@@ -608,15 +629,17 @@ const CalendarPage: React.FC = () => {
                       start: new Date(selectedLesson.scheduledDate),
                       end: new Date(new Date(selectedLesson.scheduledDate).getTime() + selectedLesson.duration * 60000),
                     });
+                    setPendingDuration(selectedLesson.duration);
                     setReason('');
                     setRescheduleDialogOpen(true);
                   }}
                   disabled={!canModify(selectedLesson)}
                 >
-                  Request Reschedule
+                  Reschedule
                 </Button>
                 <Button
                   variant="outlined"
+                  size="small"
                   color="error"
                   startIcon={<CancelIcon />}
                   onClick={() => {
@@ -626,9 +649,9 @@ const CalendarPage: React.FC = () => {
                   }}
                   disabled={!canModify(selectedLesson)}
                 >
-                  Request Cancel
+                  Cancel
                 </Button>
-              </>
+              </Stack>
             )}
             <Button onClick={() => setLessonDialogOpen(false)}>Close</Button>
           </DialogActions>
@@ -662,10 +685,25 @@ const CalendarPage: React.FC = () => {
                   onChange={date =>
                     setPendingSlot({
                       start: date || new Date(),
-                      end: new Date((date || new Date()).getTime() + (selectedLesson?.duration || 60) * 60000),
+                      end: new Date((date || new Date()).getTime() + pendingDuration * 60000),
                     })
                   }
                   slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label="New Duration (minutes)"
+                  type="number"
+                  value={pendingDuration}
+                  onChange={e => {
+                    const dur = parseInt(e.target.value) || (selectedLesson?.duration || 60);
+                    setPendingDuration(dur);
+                    setPendingSlot(ps =>
+                      ps ? { ...ps, end: new Date(ps.start.getTime() + dur * 60000) } : null
+                    );
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>

@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import { Lesson } from '../models/Lesson';
-import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { startOfDay, endOfDay, parseISO, addWeeks } from 'date-fns';
 
@@ -12,13 +11,13 @@ export const getLessons = async (req: AuthRequest, res: Response) => {
 
     // Build query based on user role
     let query: any = {};
-    
-    if (userRole === 'student') {
-      // Students should only see their own lessons
-      query.students = userId;
-    } else if (userRole === 'teacher') {
+
+    if (userRole === 'teacher') {
       // Teachers see lessons they teach
       query.teacher = userId;
+    } else if (userRole === 'student' && req.user.teacher) {
+      // Students see lessons for their teacher
+      query.teacher = req.user.teacher._id || req.user.teacher;
     }
 
     // Add date range filter if provided
@@ -88,9 +87,13 @@ export const getLessonById = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if user has access to this lesson
+    const studentTeacherId = req.user.teacher?._id?.toString() || req.user.teacher?.toString();
     const hasAccess = userRole === 'admin' ||
       (userRole === 'teacher' && lesson.teacher._id.toString() === userId.toString()) ||
-      (userRole === 'student' && lesson.students.some((student: any) => student._id.toString() === userId.toString()));
+      (userRole === 'student' && (
+        lesson.students.some((student: any) => student._id.toString() === userId.toString()) ||
+        lesson.teacher._id.toString() === studentTeacherId
+      ));
 
     if (!hasAccess) {
       return res.status(403).json({
@@ -158,7 +161,7 @@ export const confirmAttendance = async (req: AuthRequest, res: Response) => {
 export const requestReschedule = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { reason, newDate } = req.body;
+    const { reason, newDate, newDuration } = req.body;
     const userId = req.user._id;
 
     const lesson = await Lesson.findById(id);
@@ -187,6 +190,11 @@ export const requestReschedule = async (req: AuthRequest, res: Response) => {
     // If new date is provided, update it (pending teacher approval)
     if (newDate) {
       lesson.scheduledDate = new Date(newDate);
+    }
+
+    // Allow requesting a different duration
+    if (newDuration) {
+      lesson.duration = newDuration;
     }
 
     await lesson.save();
@@ -253,7 +261,7 @@ export const requestCancel = async (req: AuthRequest, res: Response) => {
 export const approveReschedule = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { approved, newDate } = req.body;
+    const { approved, newDate, newDuration } = req.body;
     const userId = req.user._id;
 
     const lesson = await Lesson.findById(id);
@@ -278,15 +286,22 @@ export const approveReschedule = async (req: AuthRequest, res: Response) => {
       if (newDate) {
         lesson.scheduledDate = new Date(newDate);
       }
+      if (newDuration) {
+        lesson.duration = newDuration;
+      }
     } else {
       lesson.status = 'scheduled'; // Revert to original status
     }
 
     await lesson.save();
+    const populated = await lesson.populate([
+      { path: 'teacher', select: 'firstName lastName email' },
+      { path: 'students', select: 'firstName lastName email' }
+    ]);
 
     res.json({
       success: true,
-      data: lesson,
+      data: populated,
       message: approved ? 'Reschedule approved' : 'Reschedule denied'
     });
   } catch (error) {
@@ -324,9 +339,14 @@ export const approveCancel = async (req: AuthRequest, res: Response) => {
     lesson.status = approved ? 'cancelled' : 'scheduled';
     await lesson.save();
 
+    const populated = await lesson.populate([
+      { path: 'teacher', select: 'firstName lastName email' },
+      { path: 'students', select: 'firstName lastName email' }
+    ]);
+
     res.json({
       success: true,
-      data: lesson,
+      data: populated,
       message: approved ? 'Cancellation approved' : 'Cancellation denied'
     });
   } catch (error) {

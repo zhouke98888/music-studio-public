@@ -77,8 +77,8 @@ export interface Instrument {
   _id: string;
   name: string;
   brand: string;
-  instrumentModel: string;
-  serialNumber: string;
+  instrumentModel?: string;
+  serialNumber?: string;
   category: string;
   condition: 'excellent' | 'good' | 'fair' | 'poor' | 'broken' | 'lost';
   isAvailable: boolean;
@@ -86,6 +86,7 @@ export interface Instrument {
   checkOutDate?: string;
   expectedReturnDate?: string;
   notes?: string;
+  teacher: User;
   createdAt: string;
   updatedAt: string;
 }

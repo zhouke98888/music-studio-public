@@ -7,6 +7,13 @@ export const getInstruments = async (req: AuthRequest, res: Response) => {
     const { search, category, available } = req.query;
     
     let query: any = {};
+
+    // Restrict instruments by owner
+    if (req.user.role === 'teacher') {
+      query.teacher = req.user._id;
+    } else if (req.user.role === 'student') {
+      query.teacher = req.user.teacher;
+    }
     
     // Search by name, brand, or model
     if (search) {
@@ -44,7 +51,13 @@ export const getInstrumentById = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const instrument = await Instrument.findById(id)
+    const ownerFilter = req.user.role === 'teacher'
+      ? { _id: id, teacher: req.user._id }
+      : req.user.role === 'student'
+      ? { _id: id, teacher: req.user.teacher }
+      : { _id: id };
+
+    const instrument = await Instrument.findOne(ownerFilter)
       .populate({ path: 'currentBorrower', select: 'firstName lastName email phone', match: { isActive: true } });
 
     if (!instrument) {
@@ -73,7 +86,13 @@ export const checkOutInstrument = async (req: AuthRequest, res: Response) => {
     const { expectedReturnDate } = req.body;
     const userId = req.user._id;
 
-    const instrument = await Instrument.findById(id);
+    const ownerFilter = req.user.role === 'teacher'
+      ? { _id: id, teacher: req.user._id }
+      : req.user.role === 'student'
+      ? { _id: id, teacher: req.user.teacher }
+      : { _id: id };
+
+    const instrument = await Instrument.findOne(ownerFilter);
 
     if (!instrument) {
       return res.status(404).json({
@@ -127,7 +146,13 @@ export const checkInInstrument = async (req: AuthRequest, res: Response) => {
     const { condition, notes } = req.body;
     const userId = req.user._id;
 
-    const instrument = await Instrument.findById(id);
+    const ownerFilter = req.user.role === 'teacher'
+      ? { _id: id, teacher: req.user._id }
+      : req.user.role === 'student'
+      ? { _id: id, teacher: req.user.teacher }
+      : { _id: id };
+
+    const instrument = await Instrument.findOne(ownerFilter);
 
     if (!instrument) {
       return res.status(404).json({
@@ -209,8 +234,20 @@ export const createInstrument = async (req: AuthRequest, res: Response) => {
       serialNumber,
       category,
       condition,
-      notes
+      notes,
+      teacher
     } = req.body;
+
+    let teacherId = req.user._id;
+    if (req.user.role === 'admin') {
+      teacherId = teacher;
+      if (!teacherId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Teacher is required'
+        });
+      }
+    }
 
     const instrument = new Instrument({
       name,
@@ -219,7 +256,8 @@ export const createInstrument = async (req: AuthRequest, res: Response) => {
       serialNumber,
       category,
       condition,
-      notes
+      notes,
+      teacher: teacherId
     });
 
     await instrument.save();
@@ -250,14 +288,19 @@ export const updateInstrument = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const updates = req.body;
 
-    // Don't allow updating checkout info through this endpoint
+    // Don't allow updating checkout info or ownership through this endpoint
     delete updates.isAvailable;
     delete updates.currentBorrower;
     delete updates.checkOutDate;
     delete updates.expectedReturnDate;
+    delete updates.teacher;
 
-    const instrument = await Instrument.findByIdAndUpdate(
-      id,
+    const filter = req.user.role === 'teacher'
+      ? { _id: id, teacher: req.user._id }
+      : { _id: id };
+
+    const instrument = await Instrument.findOneAndUpdate(
+      filter,
       updates,
       { new: true, runValidators: true }
     ).populate({ path: 'currentBorrower', select: 'firstName lastName email', match: { isActive: true } });
@@ -287,7 +330,11 @@ export const deleteInstrument = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const instrument = await Instrument.findById(id);
+    const filter = req.user.role === 'teacher'
+      ? { _id: id, teacher: req.user._id }
+      : { _id: id };
+
+    const instrument = await Instrument.findOne(filter);
 
     if (!instrument) {
       return res.status(404).json({
@@ -304,7 +351,7 @@ export const deleteInstrument = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    await Instrument.findByIdAndDelete(id);
+    await Instrument.findOneAndDelete(filter);
 
     res.json({
       success: true,
