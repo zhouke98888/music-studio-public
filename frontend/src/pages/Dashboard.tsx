@@ -109,7 +109,11 @@ const Dashboard: React.FC = () => {
       let updated: Lesson | undefined;
       if (approved) {
         if (lesson.status === 'rescheduling') {
-          updated = await lessonsAPI.approveReschedule(lesson._id, { approved: true });
+          updated = await lessonsAPI.approveReschedule(lesson._id, {
+            approved: true,
+            newDate: new Date(lesson.scheduledDate).toISOString(),
+            newDuration: lesson.duration,
+          });
         } else if (lesson.status === 'cancelling') {
           updated = await lessonsAPI.approveCancel(lesson._id, { approved: true });
         }

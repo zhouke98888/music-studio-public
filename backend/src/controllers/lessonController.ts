@@ -155,7 +155,7 @@ export const confirmAttendance = async (req: AuthRequest, res: Response) => {
 export const requestReschedule = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { reason, newDate } = req.body;
+    const { reason, newDate, newDuration } = req.body;
     const userId = req.user._id;
 
     const lesson = await Lesson.findById(id);
@@ -184,6 +184,11 @@ export const requestReschedule = async (req: AuthRequest, res: Response) => {
     // If new date is provided, update it (pending teacher approval)
     if (newDate) {
       lesson.scheduledDate = new Date(newDate);
+    }
+
+    // Allow requesting a different duration
+    if (newDuration) {
+      lesson.duration = newDuration;
     }
 
     await lesson.save();
@@ -250,7 +255,7 @@ export const requestCancel = async (req: AuthRequest, res: Response) => {
 export const approveReschedule = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { approved, newDate } = req.body;
+    const { approved, newDate, newDuration } = req.body;
     const userId = req.user._id;
 
     const lesson = await Lesson.findById(id);
@@ -274,6 +279,9 @@ export const approveReschedule = async (req: AuthRequest, res: Response) => {
       lesson.status = 'scheduled';
       if (newDate) {
         lesson.scheduledDate = new Date(newDate);
+      }
+      if (newDuration) {
+        lesson.duration = newDuration;
       }
     } else {
       lesson.status = 'scheduled'; // Revert to original status

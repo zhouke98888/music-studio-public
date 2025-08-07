@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, ButtonGroup, Typography, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Box, Button, ButtonGroup, Typography, Dialog, DialogActions, DialogContent, DialogTitle, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Stack } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, Schedule as ScheduleIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -94,6 +94,7 @@ const CalendarPage: React.FC = () => {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
+  const [pendingDuration, setPendingDuration] = useState<number>(60);
 
   const canModify = (lesson: Lesson) => {
     if (user?.role === 'teacher') return true;
@@ -241,7 +242,11 @@ const CalendarPage: React.FC = () => {
     try {
       if (approved) {
         if (editingLesson.status === 'rescheduling') {
-          await lessonsAPI.approveReschedule(editingLesson._id, { approved: true });
+          await lessonsAPI.approveReschedule(editingLesson._id, {
+            approved: true,
+            newDate: new Date(editingLesson.scheduledDate).toISOString(),
+            newDuration: editingLesson.duration,
+          });
         } else if (editingLesson.status === 'cancelling') {
           await lessonsAPI.approveCancel(editingLesson._id, { approved: true });
         }
@@ -309,10 +314,12 @@ const CalendarPage: React.FC = () => {
       await lessonsAPI.requestReschedule(selectedLesson._id, {
         reason,
         newDate: pendingSlot.start.toISOString(),
+        newDuration: pendingDuration,
       });
       setRescheduleDialogOpen(false);
       setSelectedLesson(null);
       setPendingSlot(null);
+      setPendingDuration(60);
       setReason('');
       loadLessons(range?.start, range?.end);
     } catch (e) {
@@ -590,7 +597,7 @@ const CalendarPage: React.FC = () => {
           </DialogContent>
           <DialogActions>
             {selectedLesson && user?.role === 'student' && (
-              <>
+              <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
                   startIcon={<CheckCircleIcon />}
@@ -609,6 +616,7 @@ const CalendarPage: React.FC = () => {
                       start: new Date(selectedLesson.scheduledDate),
                       end: new Date(new Date(selectedLesson.scheduledDate).getTime() + selectedLesson.duration * 60000),
                     });
+                    setPendingDuration(selectedLesson.duration);
                     setReason('');
                     setRescheduleDialogOpen(true);
                   }}
@@ -629,7 +637,7 @@ const CalendarPage: React.FC = () => {
                 >
                   Request Cancel
                 </Button>
-              </>
+              </Stack>
             )}
             <Button onClick={() => setLessonDialogOpen(false)}>Close</Button>
           </DialogActions>
@@ -663,10 +671,25 @@ const CalendarPage: React.FC = () => {
                   onChange={date =>
                     setPendingSlot({
                       start: date || new Date(),
-                      end: new Date((date || new Date()).getTime() + (selectedLesson?.duration || 60) * 60000),
+                      end: new Date((date || new Date()).getTime() + pendingDuration * 60000),
                     })
                   }
                   slotProps={{ textField: { fullWidth: true } }}
+                />
+              </Grid>
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label="New Duration (minutes)"
+                  type="number"
+                  value={pendingDuration}
+                  onChange={e => {
+                    const dur = parseInt(e.target.value) || (selectedLesson?.duration || 60);
+                    setPendingDuration(dur);
+                    setPendingSlot(ps =>
+                      ps ? { ...ps, end: new Date(ps.start.getTime() + dur * 60000) } : null
+                    );
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>

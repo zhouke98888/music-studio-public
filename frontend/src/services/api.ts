@@ -93,7 +93,7 @@ export const lessonsAPI = {
     return response.data.data!;
   },
 
-  requestReschedule: async (id: string, data: { reason: string; newDate?: string }): Promise<Lesson> => {
+  requestReschedule: async (id: string, data: { reason: string; newDate?: string; newDuration?: number }): Promise<Lesson> => {
     const response: AxiosResponse<ApiResponse<Lesson>> = await api.post(`/lessons/${id}/request-reschedule`, data);
     return response.data.data!;
   },
@@ -103,7 +103,7 @@ export const lessonsAPI = {
     return response.data.data!;
   },
 
-  approveReschedule: async (id: string, data: { approved: boolean; newDate?: string }): Promise<Lesson> => {
+  approveReschedule: async (id: string, data: { approved: boolean; newDate?: string; newDuration?: number }): Promise<Lesson> => {
     const response: AxiosResponse<ApiResponse<Lesson>> = await api.post(`/lessons/${id}/approve-reschedule`, data);
     return response.data.data!;
   },
