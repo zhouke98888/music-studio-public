@@ -219,7 +219,7 @@ const Dashboard: React.FC = () => {
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 {user?.role === 'teacher'
-                  ? 'Upcoming lessons and pending actions'
+                  ? 'Upcoming Lessons and Pending Actions'
                   : 'Upcoming Lessons'}
               </Typography>
             {user?.role === 'teacher' ? (
