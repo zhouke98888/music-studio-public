@@ -100,12 +100,25 @@ const Dashboard: React.FC = () => {
 
   const handlePendingAction = async (lesson: Lesson, approved: boolean) => {
     try {
+      let updated: Lesson | undefined;
       if (lesson.status === 'rescheduling') {
-        await lessonsAPI.approveReschedule(lesson._id, { approved });
+        updated = await lessonsAPI.approveReschedule(lesson._id, { approved });
       } else if (lesson.status === 'cancelling') {
-        await lessonsAPI.approveCancel(lesson._id, { approved });
+        updated = await lessonsAPI.approveCancel(lesson._id, { approved });
       }
       setPendingLessons(prev => prev.filter(l => l._id !== lesson._id));
+      if (updated) {
+        setUpcomingLessons(prev => {
+          const mapped = prev.map(l => (l._id === updated!._id ? updated! : l));
+          return mapped
+            .filter(l => l.status !== 'cancelled')
+            .sort(
+              (a, b) =>
+                new Date(a.scheduledDate).getTime() -
+                new Date(b.scheduledDate).getTime()
+            );
+        });
+      }
     } catch (err) {
       console.error('Pending action error:', err);
       setError('Failed to update lesson');
@@ -200,58 +213,31 @@ const Dashboard: React.FC = () => {
           </Card>
         </Grid>
 
-        {/* Upcoming Lessons */}
+        {/* Upcoming Lessons / Pending Actions */}
         <Grid size={{ xs: 12, md:8}}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Upcoming Lessons
+                {user?.role === 'teacher'
+                  ? 'Upcoming lessons and pending actions'
+                  : 'Upcoming Lessons'}
               </Typography>
-            {upcomingLessons.length === 0 ? (
-              <Typography color="textSecondary">
-                No upcoming lessons scheduled.
-              </Typography>
-            ) : (
-              <List>
-                {upcomingLessons.map((lesson) => (
-                  <ListItem key={lesson._id} divider>
-                    <ListItemText
-                      primary={lesson.title}
-                      secondary={
-                        <Box>
-                          <Typography variant="body2" color="textSecondary">
-                            {formatLessonDate(lesson.scheduledDate)}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary">
-                            {user?.role === 'student'
-                              ? `Teacher: ${lesson.teacher.firstName} ${lesson.teacher.lastName}`
-                              : `Students: ${lesson.students.map(s => `${s.firstName} ${s.lastName}`).join(', ')}`
-                            }
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                    <Chip
-                      label={lesson.status}
-                      color={getStatusColor(lesson.status) as any}
-                      size="small"
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
-            {user?.role === 'teacher' && (
-              <>
-                <Typography variant="subtitle1" mt={2} gutterBottom>
-                  Pending Actions
-                </Typography>
-                {pendingLessons.length === 0 ? (
-                  <Typography color="textSecondary">
-                    No pending actions.
-                  </Typography>
-                ) : (
+            {user?.role === 'teacher' ? (
+              (() => {
+                const extraPending = pendingLessons.filter(
+                  p => !upcomingLessons.some(u => u._id === p._id)
+                );
+                const combined = [...upcomingLessons, ...extraPending];
+                if (combined.length === 0) {
+                  return (
+                    <Typography color="textSecondary">
+                      No upcoming lessons or pending actions.
+                    </Typography>
+                  );
+                }
+                return (
                   <List>
-                    {pendingLessons.map((lesson) => (
+                    {combined.map((lesson) => (
                       <ListItem key={lesson._id} divider>
                         <ListItemText
                           primary={lesson.title}
@@ -272,30 +258,66 @@ const Dashboard: React.FC = () => {
                             color={getStatusColor(lesson.status) as any}
                             size="small"
                           />
-                          <Box mt={1} display="flex" gap={1}>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="success"
-                              onClick={() => handlePendingAction(lesson, true)}
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="error"
-                              onClick={() => handlePendingAction(lesson, false)}
-                            >
-                              Deny
-                            </Button>
-                          </Box>
+                          {(lesson.status === 'rescheduling' || lesson.status === 'cancelling') && (
+                            <Box mt={1} display="flex" gap={1}>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                onClick={() => handlePendingAction(lesson, true)}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="error"
+                                onClick={() => handlePendingAction(lesson, false)}
+                              >
+                                Deny
+                              </Button>
+                            </Box>
+                          )}
                         </Box>
                       </ListItem>
                     ))}
                   </List>
-                )}
-              </>
+                );
+              })()
+            ) : (
+              upcomingLessons.length === 0 ? (
+                <Typography color="textSecondary">
+                  No upcoming lessons scheduled.
+                </Typography>
+              ) : (
+                <List>
+                  {upcomingLessons.map((lesson) => (
+                    <ListItem key={lesson._id} divider>
+                      <ListItemText
+                        primary={lesson.title}
+                        secondary={
+                          <Box>
+                            <Typography variant="body2" color="textSecondary">
+                              {formatLessonDate(lesson.scheduledDate)}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              {user?.role === 'student'
+                                ? `Teacher: ${lesson.teacher.firstName} ${lesson.teacher.lastName}`
+                                : `Students: ${lesson.students.map(s => `${s.firstName} ${s.lastName}`).join(', ')}`
+                              }
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                      <Chip
+                        label={lesson.status}
+                        color={getStatusColor(lesson.status) as any}
+                        size="small"
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )
             )}
             <Box mt={2}>
               <Button variant="outlined" href="/lessons">
