@@ -24,7 +24,6 @@ import {
   MusicNote as MusicNoteIcon,
   Receipt as ReceiptIcon,
   LibraryMusic as LibraryMusicIcon,
-  CalendarMonth as CalendarMonthIcon,
   People as PeopleIcon,
   AccountCircle,
   Logout,
@@ -77,7 +76,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
     const studentItems = [
       { text: 'My Lessons', icon: <SchoolIcon />, path: '/lessons' },
-      { text: 'Calendar', icon: <CalendarMonthIcon />, path: '/calendar' },
       { text: 'Invoices', icon: <ReceiptIcon />, path: '/invoices' },
       { text: 'Instruments', icon: <MusicNoteIcon />, path: '/instruments' },
     ];
@@ -85,7 +83,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const teacherItems = [
       { text: 'Students', icon: <PeopleIcon />, path: '/students' },
       { text: 'Lessons', icon: <SchoolIcon />, path: '/lessons' },
-      { text: 'Calendar', icon: <CalendarMonthIcon />, path: '/calendar' },
       { text: 'Invoices', icon: <ReceiptIcon />, path: '/invoices' },
       { text: 'Instruments', icon: <LibraryMusicIcon />, path: '/instruments' },
     ];

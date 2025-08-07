@@ -4,6 +4,12 @@
   color: #000;
 }
 
+.rbc-event.lesson-cancelling {
+  background-color: white;
+  border: 2px dashed #d32f2f;
+  color: #000;
+}
+
 .rbc-event.lesson-cancelled {
   background-color: white;
   border: 2px solid #d32f2f;
@@ -21,4 +27,10 @@
   border-top: 2px solid #d32f2f;
   transform: translateY(-50%);
   pointer-events: none;
+}
+
+.rbc-event.lesson-readonly {
+  background-color: #e0e0e0;
+  border: 1px solid #bdbdbd;
+  color: #616161;
 }

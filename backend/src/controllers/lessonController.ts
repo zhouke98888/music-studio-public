@@ -14,7 +14,11 @@ export const getLessons = async (req: AuthRequest, res: Response) => {
     let query: any = {};
     
     if (userRole === 'student') {
-      query.students = userId;
+      if (req.user.teacher) {
+        query.teacher = req.user.teacher;
+      } else {
+        query.students = userId;
+      }
     } else if (userRole === 'teacher') {
       query.teacher = userId;
     }
