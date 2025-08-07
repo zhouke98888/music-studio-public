@@ -20,6 +20,7 @@ import { enUS } from 'date-fns/locale';
 import { lessonsAPI, teachersAPI } from '../services/api';
 import { Lesson, Student } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const locales = {
   'en-US': enUS,
@@ -59,6 +60,8 @@ const CustomToolbar: React.FC<any> = ({ label, onNavigate, onView, view }) => (
 
 const CalendarPage: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [events, setEvents] = useState<LessonEvent[]>([]);
   const [createDialog, setCreateDialog] = useState(false);
@@ -95,6 +98,14 @@ const CalendarPage: React.FC = () => {
   const [reason, setReason] = useState('');
   const [pendingSlot, setPendingSlot] = useState<{ start: Date; end: Date } | null>(null);
   const [pendingDuration, setPendingDuration] = useState<number>(60);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('new') === '1') {
+      setCreateDialog(true);
+      navigate('/lessons', { replace: true });
+    }
+  }, [location.search, navigate]);
 
   const canModify = (lesson: Lesson) => {
     if (user?.role === 'teacher') return true;
