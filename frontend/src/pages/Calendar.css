@@ -13,7 +13,7 @@
 .rbc-event.lesson-cancelled {
   background-color: white;
   border: 2px solid #d32f2f;
-  color: #000;
+  color: #d32f2f;
   position: relative;
   overflow: hidden;
 }

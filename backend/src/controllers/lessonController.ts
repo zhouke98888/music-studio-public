@@ -12,11 +12,8 @@ export const getLessons = async (req: AuthRequest, res: Response) => {
 
     // Build query based on user role
     let query: any = {};
-    
-    if (userRole === 'student') {
-      // Students should only see their own lessons
-      query.students = userId;
-    } else if (userRole === 'teacher') {
+
+    if (userRole === 'teacher') {
       // Teachers see lessons they teach
       query.teacher = userId;
     }

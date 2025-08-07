@@ -46,7 +46,12 @@ const Dashboard: React.FC = () => {
           startDate: new Date().toISOString().split('T')[0],
           endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Next 7 days
         });
-        setUpcomingLessons(lessons.slice(0, 5)); // Show only next 5 lessons
+        const filteredLessons = user?.role === 'student'
+          ? lessons.filter(l =>
+              l.students.some(s => (typeof s === 'string' ? s : s._id) === user._id)
+            )
+          : lessons;
+        setUpcomingLessons(filteredLessons.slice(0, 5)); // Show only next 5 lessons
 
         if (user?.role === 'student') {
           // Fetch checked out instruments for students
@@ -82,7 +87,7 @@ const Dashboard: React.FC = () => {
       case 'cancelling':
         return 'error';
       case 'cancelled':
-        return 'default';
+        return 'error';
       default:
         return 'default';
     }
@@ -102,10 +107,15 @@ const Dashboard: React.FC = () => {
   const handlePendingAction = async (lesson: Lesson, approved: boolean) => {
     try {
       let updated: Lesson | undefined;
-      if (lesson.status === 'rescheduling') {
-        updated = await lessonsAPI.approveReschedule(lesson._id, { approved });
-      } else if (lesson.status === 'cancelling') {
-        updated = await lessonsAPI.approveCancel(lesson._id, { approved });
+      if (approved) {
+        if (lesson.status === 'rescheduling') {
+          updated = await lessonsAPI.approveReschedule(lesson._id, { approved: true });
+        } else if (lesson.status === 'cancelling') {
+          updated = await lessonsAPI.approveCancel(lesson._id, { approved: true });
+        }
+      } else {
+        if (!window.confirm('Cancel this lesson?')) return;
+        updated = await lessonsAPI.approveCancel(lesson._id, { approved: true });
       }
       setPendingLessons(prev => prev.filter(l => l._id !== lesson._id));
       if (updated) {

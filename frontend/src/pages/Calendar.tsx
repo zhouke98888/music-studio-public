@@ -223,19 +223,6 @@ const CalendarPage: React.FC = () => {
     }
   };
 
-  const handleDeleteLesson = async () => {
-    if (!editingLesson) return;
-    if (!window.confirm('Delete this lesson?')) return;
-    try {
-      await lessonsAPI.deleteLesson(editingLesson._id);
-      setEditDialog(false);
-      setEditingLesson(null);
-      loadLessons(range?.start, range?.end);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleCancelLesson = async () => {
     if (!editingLesson) return;
     if (!window.confirm('Cancel this lesson?')) return;
@@ -252,10 +239,15 @@ const CalendarPage: React.FC = () => {
   const handleApproveRequest = async (approved: boolean) => {
     if (!editingLesson) return;
     try {
-      if (editingLesson.status === 'rescheduling') {
-        await lessonsAPI.approveReschedule(editingLesson._id, { approved });
-      } else if (editingLesson.status === 'cancelling') {
-        await lessonsAPI.approveCancel(editingLesson._id, { approved });
+      if (approved) {
+        if (editingLesson.status === 'rescheduling') {
+          await lessonsAPI.approveReschedule(editingLesson._id, { approved: true });
+        } else if (editingLesson.status === 'cancelling') {
+          await lessonsAPI.approveCancel(editingLesson._id, { approved: true });
+        }
+      } else {
+        if (!window.confirm('Cancel this lesson?')) return;
+        await lessonsAPI.approveCancel(editingLesson._id, { approved: true });
       }
       setReviewDialogOpen(false);
       setEditingLesson(null);
@@ -536,8 +528,11 @@ const CalendarPage: React.FC = () => {
           <DialogActions>
             <Button onClick={() => setEditDialog(false)}>Close</Button>
             <Button color="error" onClick={handleCancelLesson}>Cancel Lesson</Button>
-            <Button color="error" onClick={handleDeleteLesson}>Delete</Button>
-            <Button variant="contained" onClick={handleUpdateLesson} disabled={!editData.title || editData.students.length === 0}>
+            <Button
+              variant="contained"
+              onClick={handleUpdateLesson}
+              disabled={!editData.title || editData.students.length === 0}
+            >
               Save
             </Button>
           </DialogActions>
