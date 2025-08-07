@@ -600,14 +600,16 @@ const CalendarPage: React.FC = () => {
               <Stack direction="row" spacing={1}>
                 <Button
                   variant="contained"
+                  size="small"
                   startIcon={<CheckCircleIcon />}
                   onClick={handleConfirmAttendance}
                   disabled={!canModify(selectedLesson)}
                 >
-                  I Am Here
+                  I'm Here
                 </Button>
                 <Button
                   variant="outlined"
+                  size="small"
                   startIcon={<ScheduleIcon />}
                   onClick={() => {
                     if (!selectedLesson) return;
@@ -622,10 +624,11 @@ const CalendarPage: React.FC = () => {
                   }}
                   disabled={!canModify(selectedLesson)}
                 >
-                  Request Reschedule
+                  Reschedule
                 </Button>
                 <Button
                   variant="outlined"
+                  size="small"
                   color="error"
                   startIcon={<CancelIcon />}
                   onClick={() => {
@@ -635,7 +638,7 @@ const CalendarPage: React.FC = () => {
                   }}
                   disabled={!canModify(selectedLesson)}
                 >
-                  Request Cancel
+                  Cancel
                 </Button>
               </Stack>
             )}

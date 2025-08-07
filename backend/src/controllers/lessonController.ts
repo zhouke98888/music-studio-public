@@ -288,10 +288,14 @@ export const approveReschedule = async (req: AuthRequest, res: Response) => {
     }
 
     await lesson.save();
+    const populated = await lesson.populate([
+      { path: 'teacher', select: 'firstName lastName email' },
+      { path: 'students', select: 'firstName lastName email' }
+    ]);
 
     res.json({
       success: true,
-      data: lesson,
+      data: populated,
       message: approved ? 'Reschedule approved' : 'Reschedule denied'
     });
   } catch (error) {
@@ -329,9 +333,14 @@ export const approveCancel = async (req: AuthRequest, res: Response) => {
     lesson.status = approved ? 'cancelled' : 'scheduled';
     await lesson.save();
 
+    const populated = await lesson.populate([
+      { path: 'teacher', select: 'firstName lastName email' },
+      { path: 'students', select: 'firstName lastName email' }
+    ]);
+
     res.json({
       success: true,
-      data: lesson,
+      data: populated,
       message: approved ? 'Cancellation approved' : 'Cancellation denied'
     });
   } catch (error) {
