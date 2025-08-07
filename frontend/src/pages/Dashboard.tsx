@@ -17,6 +17,7 @@ import {
   MusicNote as MusicNoteIcon,
   Receipt as ReceiptIcon,
   EventAvailable as EventAvailableIcon,
+  PendingActions as PendingActionsIcon,
 } from '@mui/icons-material';
 //import { useAuth } from '../../contexts/AuthContext';
 //import { lessonsAPI, instrumentsAPI } from '../../services/api';
@@ -169,6 +170,26 @@ const Dashboard: React.FC = () => {
                     </Typography>
                     <Typography variant="h4">
                       {myInstruments.length}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
+
+        {user?.role === 'teacher' && (
+          <Grid size={{ xs: 12, sm: 6, md:3}}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center">
+                  <PendingActionsIcon color="info" sx={{ mr: 2, fontSize: 40 }} />
+                  <Box>
+                    <Typography color="textSecondary" gutterBottom>
+                      Pending Actions
+                    </Typography>
+                    <Typography variant="h4">
+                      {pendingLessons.length}
                     </Typography>
                   </Box>
                 </Box>
