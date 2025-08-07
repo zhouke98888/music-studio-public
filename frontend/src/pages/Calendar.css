@@ -29,6 +29,11 @@
   pointer-events: none;
 }
 
+.rbc-agenda-event-cell.lesson-cancelled {
+  color: #d32f2f;
+  text-decoration: line-through;
+}
+
 .rbc-event.lesson-readonly {
   background-color: #e0e0e0;
   border: 1px solid #bdbdbd;

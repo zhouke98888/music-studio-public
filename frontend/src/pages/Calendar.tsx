@@ -329,11 +329,14 @@ const CalendarPage: React.FC = () => {
           components={{ toolbar: CustomToolbar }}
           date={currentDate}
           view={view}
+          min={new Date(1970, 0, 1, 7, 0)}
+          max={new Date(1970, 0, 1, 21, 0)}
           selectable={user?.role === 'teacher'}
           draggableAccessor={(event) => canModify(event.resource)}
           resizableAccessor={(event) => canModify(event.resource)}
           eventPropGetter={(event) => {
             const classes = [] as string[];
+            const style: React.CSSProperties = {};
             if (event.resource.status === 'rescheduling') {
               classes.push('lesson-rescheduling');
             }
@@ -342,11 +345,14 @@ const CalendarPage: React.FC = () => {
             }
             if (event.resource.status === 'cancelled') {
               classes.push('lesson-cancelled');
+              if (view === 'agenda') {
+                style.textDecoration = 'line-through';
+              }
             }
             if (user?.role === 'student' && !canModify(event.resource)) {
               classes.push('lesson-readonly');
             }
-            return { className: classes.join(' ') };
+            return { className: classes.join(' '), style };
           }}
           onEventDrop={handleEventDrop}
           onEventResize={handleEventDrop}
