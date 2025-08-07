@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import { Lesson } from '../models/Lesson';
-import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { startOfDay, endOfDay, parseISO, addWeeks } from 'date-fns';
 
@@ -16,6 +15,9 @@ export const getLessons = async (req: AuthRequest, res: Response) => {
     if (userRole === 'teacher') {
       // Teachers see lessons they teach
       query.teacher = userId;
+    } else if (userRole === 'student' && req.user.teacher) {
+      // Students see lessons for their teacher
+      query.teacher = req.user.teacher._id || req.user.teacher;
     }
 
     // Add date range filter if provided
@@ -85,9 +87,13 @@ export const getLessonById = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if user has access to this lesson
+    const studentTeacherId = req.user.teacher?._id?.toString() || req.user.teacher?.toString();
     const hasAccess = userRole === 'admin' ||
       (userRole === 'teacher' && lesson.teacher._id.toString() === userId.toString()) ||
-      (userRole === 'student' && lesson.students.some((student: any) => student._id.toString() === userId.toString()));
+      (userRole === 'student' && (
+        lesson.students.some((student: any) => student._id.toString() === userId.toString()) ||
+        lesson.teacher._id.toString() === studentTeacherId
+      ));
 
     if (!hasAccess) {
       return res.status(403).json({
