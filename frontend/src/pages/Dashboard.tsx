@@ -98,6 +98,20 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handlePendingAction = async (lesson: Lesson, approved: boolean) => {
+    try {
+      if (lesson.status === 'rescheduling') {
+        await lessonsAPI.approveReschedule(lesson._id, { approved });
+      } else if (lesson.status === 'cancelling') {
+        await lessonsAPI.approveCancel(lesson._id, { approved });
+      }
+      setPendingLessons(prev => prev.filter(l => l._id !== lesson._id));
+    } catch (err) {
+      console.error('Pending action error:', err);
+      setError('Failed to update lesson');
+    }
+  };
+
   if (loading) {
     return <Typography>Loading dashboard...</Typography>;
   }
@@ -193,47 +207,104 @@ const Dashboard: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Upcoming Lessons
               </Typography>
-              {upcomingLessons.length === 0 ? (
-                <Typography color="textSecondary">
-                  No upcoming lessons scheduled.
+            {upcomingLessons.length === 0 ? (
+              <Typography color="textSecondary">
+                No upcoming lessons scheduled.
+              </Typography>
+            ) : (
+              <List>
+                {upcomingLessons.map((lesson) => (
+                  <ListItem key={lesson._id} divider>
+                    <ListItemText
+                      primary={lesson.title}
+                      secondary={
+                        <Box>
+                          <Typography variant="body2" color="textSecondary">
+                            {formatLessonDate(lesson.scheduledDate)}
+                          </Typography>
+                          <Typography variant="body2" color="textSecondary">
+                            {user?.role === 'student'
+                              ? `Teacher: ${lesson.teacher.firstName} ${lesson.teacher.lastName}`
+                              : `Students: ${lesson.students.map(s => `${s.firstName} ${s.lastName}`).join(', ')}`
+                            }
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                    <Chip
+                      label={lesson.status}
+                      color={getStatusColor(lesson.status) as any}
+                      size="small"
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            )}
+            {user?.role === 'teacher' && (
+              <>
+                <Typography variant="subtitle1" mt={2} gutterBottom>
+                  Pending Actions
                 </Typography>
-              ) : (
-                <List>
-                  {upcomingLessons.map((lesson) => (
-                    <ListItem key={lesson._id} divider>
-                      <ListItemText
-                        primary={lesson.title}
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="textSecondary">
-                              {formatLessonDate(lesson.scheduledDate)}
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary">
-                              {user?.role === 'student' 
-                                ? `Teacher: ${lesson.teacher.firstName} ${lesson.teacher.lastName}`
-                                : `Students: ${lesson.students.map(s => `${s.firstName} ${s.lastName}`).join(', ')}`
-                              }
-                            </Typography>
+                {pendingLessons.length === 0 ? (
+                  <Typography color="textSecondary">
+                    No pending actions.
+                  </Typography>
+                ) : (
+                  <List>
+                    {pendingLessons.map((lesson) => (
+                      <ListItem key={lesson._id} divider>
+                        <ListItemText
+                          primary={lesson.title}
+                          secondary={
+                            <Box>
+                              <Typography variant="body2" color="textSecondary">
+                                {formatLessonDate(lesson.scheduledDate)}
+                              </Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                Students: {lesson.students.map(s => `${s.firstName} ${s.lastName}`).join(', ')}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        <Box display="flex" flexDirection="column" alignItems="flex-end">
+                          <Chip
+                            label={lesson.status}
+                            color={getStatusColor(lesson.status) as any}
+                            size="small"
+                          />
+                          <Box mt={1} display="flex" gap={1}>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              onClick={() => handlePendingAction(lesson, true)}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="error"
+                              onClick={() => handlePendingAction(lesson, false)}
+                            >
+                              Deny
+                            </Button>
                           </Box>
-                        }
-                      />
-                      <Chip
-                        label={lesson.status}
-                        color={getStatusColor(lesson.status) as any}
-                        size="small"
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-              <Box mt={2}>
-                <Button variant="outlined" href="/lessons">
-                  View All Lessons
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+                        </Box>
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </>
+            )}
+            <Box mt={2}>
+              <Button variant="outlined" href="/lessons">
+                View All Lessons
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
 
         {/* Quick Actions / My Instruments */}
         <Grid size={{ xs: 12, md:4}}>
@@ -267,75 +338,28 @@ const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            <Box display="flex" flexDirection="column" gap={3}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Pending Actions
-                  </Typography>
-                  {pendingLessons.length === 0 ? (
-                    <Typography color="textSecondary">
-                      No pending actions.
-                    </Typography>
-                  ) : (
-                    <List>
-                      {pendingLessons.map((lesson) => (
-                        <ListItem key={lesson._id} divider>
-                          <ListItemText
-                            primary={lesson.title}
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" color="textSecondary">
-                                  {formatLessonDate(lesson.scheduledDate)}
-                                </Typography>
-                                <Typography variant="body2" color="textSecondary">
-                                  Students: {lesson.students.map(s => `${s.firstName} ${s.lastName}`).join(', ')}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                          <Chip
-                            label={lesson.status}
-                            color={getStatusColor(lesson.status) as any}
-                            size="small"
-                          />
-                          <Button
-                            component={Link}
-                            to="/lessons"
-                            size="small"
-                            sx={{ ml: 1 }}
-                          >
-                            Review
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Quick Actions
-                  </Typography>
-                  <Box display="flex" flexDirection="column" gap={2}>
-                    <Button
-                      variant="contained"
-                      component={Link}
-                      to="/lessons?new=1"
-                    >
-                      Schedule New Lesson
-                    </Button>
-                    <Button variant="outlined" href="/students">
-                      Manage Students
-                    </Button>
-                    <Button variant="outlined" href="/invoices">
-                      View Invoices
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Quick Actions
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={2}>
+                  <Button
+                    variant="contained"
+                    component={Link}
+                    to="/lessons?new=1"
+                  >
+                    Schedule New Lesson
+                  </Button>
+                  <Button variant="outlined" href="/students">
+                    Manage Students
+                  </Button>
+                  <Button variant="outlined" href="/invoices">
+                    View Invoices
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           )}
         </Grid>
       </Grid>
