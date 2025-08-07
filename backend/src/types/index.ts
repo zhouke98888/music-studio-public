@@ -87,6 +87,7 @@ export interface Instrument {
   checkOutDate?: Date;
   expectedReturnDate?: Date;
   notes?: string;
+  teacher: string; // Teacher ID
   createdAt: Date;
   updatedAt: Date;
 }

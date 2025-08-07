@@ -86,6 +86,7 @@ export interface Instrument {
   checkOutDate?: string;
   expectedReturnDate?: string;
   notes?: string;
+  teacher: User;
   createdAt: string;
   updatedAt: string;
 }
