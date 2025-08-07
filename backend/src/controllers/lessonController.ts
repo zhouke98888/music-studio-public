@@ -14,12 +14,10 @@ export const getLessons = async (req: AuthRequest, res: Response) => {
     let query: any = {};
     
     if (userRole === 'student') {
-      if (req.user.teacher) {
-        query.teacher = req.user.teacher;
-      } else {
-        query.students = userId;
-      }
+      // Students should only see their own lessons
+      query.students = userId;
     } else if (userRole === 'teacher') {
+      // Teachers see lessons they teach
       query.teacher = userId;
     }
 
@@ -33,7 +31,10 @@ export const getLessons = async (req: AuthRequest, res: Response) => {
 
     // Add status filter if provided
     if (status) {
-      query.status = status;
+      const statuses = Array.isArray(status)
+        ? status
+        : (status as string).split(',');
+      query.status = statuses.length > 1 ? { $in: statuses } : statuses[0];
     }
 
     const lessons = await Lesson.find(query)

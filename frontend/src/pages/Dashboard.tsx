@@ -31,6 +31,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [upcomingLessons, setUpcomingLessons] = useState<Lesson[]>([]);
   const [myInstruments, setMyInstruments] = useState<Instrument[]>([]);
+  const [pendingLessons, setPendingLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -46,10 +47,17 @@ const Dashboard: React.FC = () => {
         });
         setUpcomingLessons(lessons.slice(0, 5)); // Show only next 5 lessons
 
-        // If student, fetch checked out instruments
         if (user?.role === 'student') {
+          // Fetch checked out instruments for students
           const instruments = await instrumentsAPI.getMyInstruments();
           setMyInstruments(instruments);
+        } else if (user?.role === 'teacher') {
+          // Fetch lessons needing teacher approval
+          const pending = await lessonsAPI.getLessons({
+            status: 'cancelling,rescheduling',
+            startDate: new Date().toISOString().split('T')[0],
+          });
+          setPendingLessons(pending);
         }
       } catch (err: any) {
         setError('Failed to load dashboard data');
@@ -259,28 +267,75 @@ const Dashboard: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Quick Actions
-                </Typography>
-                <Box display="flex" flexDirection="column" gap={2}>
-                  <Button
-                    variant="contained"
-                    component={Link}
-                    to="/lessons?new=1"
-                  >
-                    Schedule New Lesson
-                  </Button>
-                  <Button variant="outlined" href="/students">
-                    Manage Students
-                  </Button>
-                  <Button variant="outlined" href="/invoices">
-                    View Invoices
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
+            <Box display="flex" flexDirection="column" gap={3}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Pending Actions
+                  </Typography>
+                  {pendingLessons.length === 0 ? (
+                    <Typography color="textSecondary">
+                      No pending actions.
+                    </Typography>
+                  ) : (
+                    <List>
+                      {pendingLessons.map((lesson) => (
+                        <ListItem key={lesson._id} divider>
+                          <ListItemText
+                            primary={lesson.title}
+                            secondary={
+                              <Box>
+                                <Typography variant="body2" color="textSecondary">
+                                  {formatLessonDate(lesson.scheduledDate)}
+                                </Typography>
+                                <Typography variant="body2" color="textSecondary">
+                                  Students: {lesson.students.map(s => `${s.firstName} ${s.lastName}`).join(', ')}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          <Chip
+                            label={lesson.status}
+                            color={getStatusColor(lesson.status) as any}
+                            size="small"
+                          />
+                          <Button
+                            component={Link}
+                            to="/lessons"
+                            size="small"
+                            sx={{ ml: 1 }}
+                          >
+                            Review
+                          </Button>
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Quick Actions
+                  </Typography>
+                  <Box display="flex" flexDirection="column" gap={2}>
+                    <Button
+                      variant="contained"
+                      component={Link}
+                      to="/lessons?new=1"
+                    >
+                      Schedule New Lesson
+                    </Button>
+                    <Button variant="outlined" href="/students">
+                      Manage Students
+                    </Button>
+                    <Button variant="outlined" href="/invoices">
+                      View Invoices
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
           )}
         </Grid>
       </Grid>
