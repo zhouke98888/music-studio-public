@@ -3,8 +3,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IInstrument extends Document {
   name: string;
   brand: string;
-  instrumentModel: string;
-  serialNumber: string;
+  instrumentModel?: string;
+  serialNumber?: string;
   category: string;
   condition: 'excellent' | 'good' | 'fair' | 'poor' | 'broken' | 'lost';
   isAvailable: boolean;
@@ -28,13 +28,12 @@ const InstrumentSchema = new Schema<IInstrument>({
   },
   instrumentModel: {
     type: String,
-    required: true,
     trim: true
   },
   serialNumber: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true,
     trim: true
   },
   category: {

@@ -380,7 +380,7 @@ const Dashboard: React.FC = () => {
                     {myInstruments.map((instrument) => (
                       <ListItem key={instrument._id} divider>
                         <ListItemText
-                          primary={`${instrument.brand} ${instrument.instrumentModel}`}
+                          primary={`${instrument.brand}${instrument.instrumentModel ? ` ${instrument.instrumentModel}` : ''}`}
                           secondary={`Checked out: ${format(new Date(instrument.checkOutDate!), 'MMM d, yyyy')}`}
                         />
                       </ListItem>
