@@ -54,8 +54,8 @@ type Condition = 'excellent' | 'good' | 'fair' | 'poor' | 'broken' | 'lost';
 interface InstrumentFormData {
   name: string;
   brand: string;
-  instrumentModel: string;
-  serialNumber: string;
+  instrumentModel?: string;
+  serialNumber?: string;
   category: string;
   condition: Condition;
   isAvailable: boolean;
@@ -128,8 +128,8 @@ const InstrumentsPage: React.FC = () => {
       setFormData({
         name: instrument.name,
         brand: instrument.brand,
-        instrumentModel: instrument.instrumentModel,
-        serialNumber: instrument.serialNumber,
+        instrumentModel: instrument.instrumentModel || '',
+        serialNumber: instrument.serialNumber || '',
         category: instrument.category,
         condition: instrument.condition,
         isAvailable: instrument.isAvailable,
@@ -437,13 +437,13 @@ const InstrumentsPage: React.FC = () => {
                       {instrument.brand}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {instrument.instrumentModel}
+                      {instrument.instrumentModel || '-'}
                     </Typography>
                   </Box>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" fontFamily="monospace">
-                    {instrument.serialNumber}
+                    {instrument.serialNumber || '-'}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -582,18 +582,16 @@ const InstrumentsPage: React.FC = () => {
               <TextField
                 fullWidth
                 label="Model"
-                value={formData.instrumentModel}
+                value={formData.instrumentModel || ''}
                 onChange={(e) => setFormData({ ...formData, instrumentModel: e.target.value })}
-                required
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6}}>
               <TextField
                 fullWidth
                 label="Serial Number"
-                value={formData.serialNumber}
+                value={formData.serialNumber || ''}
                 onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                required
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6}}>

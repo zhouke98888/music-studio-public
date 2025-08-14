@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import { User } from '../models/User';
 import { Teacher } from '../models/Teacher';
 import { Student, IStudent } from '../models/Student';
@@ -277,15 +278,16 @@ export const assignTeacher = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    student.teacher = teacher._id;
+    const studentObjectId = student._id as Types.ObjectId;
+    student.teacher = teacher._id as Types.ObjectId;
     await student.save();
 
-    if (!teacher.students.some(id => id.toString() === student._id.toString())) {
-      teacher.students.push(student._id);
+    if (!teacher.students.some(id => id.toString() === studentObjectId.toString())) {
+      teacher.students.push(studentObjectId);
       await teacher.save();
     }
 
-    const populated = await Student.findById(student._id)
+    const populated = await Student.findById(studentObjectId)
       .select('-password')
       .populate('teacher', 'firstName lastName email');
 

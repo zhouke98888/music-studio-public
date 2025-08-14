@@ -3,8 +3,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IInstrument extends Document {
   name: string;
   brand: string;
-  instrumentModel: string;
-  serialNumber: string;
+  instrumentModel?: string;
+  serialNumber?: string;
   category: string;
   condition: 'excellent' | 'good' | 'fair' | 'poor' | 'broken' | 'lost';
   isAvailable: boolean;
@@ -12,6 +12,7 @@ export interface IInstrument extends Document {
   checkOutDate?: Date;
   expectedReturnDate?: Date;
   notes?: string;
+  teacher: mongoose.Types.ObjectId;
 }
 
 const InstrumentSchema = new Schema<IInstrument>({
@@ -27,13 +28,12 @@ const InstrumentSchema = new Schema<IInstrument>({
   },
   instrumentModel: {
     type: String,
-    required: true,
     trim: true
   },
   serialNumber: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true,
     trim: true
   },
   category: {
@@ -64,6 +64,11 @@ const InstrumentSchema = new Schema<IInstrument>({
   notes: {
     type: String,
     trim: true
+  },
+  teacher: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   }
 }, {
   timestamps: true
@@ -73,6 +78,7 @@ const InstrumentSchema = new Schema<IInstrument>({
 InstrumentSchema.index({ category: 1 });
 InstrumentSchema.index({ isAvailable: 1 });
 InstrumentSchema.index({ currentBorrower: 1 });
+InstrumentSchema.index({ teacher: 1 });
 InstrumentSchema.index({ name: 'text', brand: 'text', instrumentModel: 'text' });
 
 export const Instrument = mongoose.model<IInstrument>('Instrument', InstrumentSchema);
