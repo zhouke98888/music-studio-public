@@ -126,9 +126,12 @@ music-studio/
   NODE_ENV=development
   MONGODB_URI=mongodb://localhost:27017/music-studio
   JWT_SECRET=your-super-secret-jwt-key
-  FRONTEND_URL=http://localhost:3000
+  FRONTEND_URLS=http://localhost:3000
   GOOGLE_CLIENT_ID=your-google-client-id # used for teacher Google sign-in
   ```
+
+  > **Note:** `FRONTEND_URLS` should be a comma-separated list of allowed origins.
+  > When deploying, ensure it includes the Cloud Storage site URL.
 
   Frontend (.env):
   ```bash
