@@ -31,6 +31,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import Logo from '../Logo';
 
 const drawerWidth = 240;
 
@@ -99,9 +100,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const drawer = (
     <div>
       <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          Music Studio
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Logo height={32} />
+          <Typography variant="h6" noWrap component="div" sx={{ ml: 1 }}>
+            Music Studio
+          </Typography>
+        </Box>
       </Toolbar>
       <Divider />
       <List>
@@ -140,8 +144,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {user?.role === 'student' ? 'Student Portal' : 
+          <Logo height={32} />
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, ml: 1 }}>
+            {user?.role === 'student' ? 'Student Portal' :
              user?.role === 'teacher' ? 'Teacher Portal' : 'Music Studio'}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>

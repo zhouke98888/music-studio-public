@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import Logo from '../Logo';
 
 declare global {
   interface Window {
@@ -96,6 +97,9 @@ const Login: React.FC = () => {
         }}
       >
         <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Logo height={80} />
+          </Box>
           <Typography component="h1" variant="h4" align="center" gutterBottom>
             Music Studio
           </Typography>

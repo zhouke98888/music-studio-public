@@ -22,6 +22,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { RegisterData, Teacher } from '../../types';
 import { teachersAPI } from '../../services/api';
+import Logo from '../Logo';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState<RegisterData>({
@@ -118,6 +119,9 @@ const Register: React.FC = () => {
           }}
         >
           <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Logo height={80} />
+            </Box>
             <Typography component="h1" variant="h4" align="center" gutterBottom>
               Music Studio
             </Typography>
