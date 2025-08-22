@@ -1,0 +1,27 @@
+### Register a user
+POST http://localhost:5001/api/auth/register
+Content-Type: application/json
+
+{"email": "test@gmail.com", 
+"username": "test", 
+"password": "1234", 
+"firstName": "Test", 
+"lastName": "Zhang", 
+"birthDate": "2025-07-01", 
+"phone": "1234567890", 
+"role": "student", 
+"school": "RM", 
+"grade": 11}
+
+### Login a user
+POST http://localhost:5001/api/auth/login
+Content-Type: application/json
+
+{
+"username": "ken", 
+"password": "1234"
+}
+
+### Get students
+GET http://localhost:5001/api/students
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2ODg2M2U2MDkwMTI3MjI2NzI5MjEzNTMiLCJpYXQiOjE3NTM5ODQ2NTksImV4cCI6MTc1NDU4OTQ1OX0.cLglk6kjC2UDHQO1GOoJr3oc6yP1MyMlorJWfPP_YSc
