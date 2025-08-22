@@ -1,6 +1,6 @@
 import React from 'react';
 
-import logo from '../logo.svg';
+const logo = process.env.PUBLIC_URL + '/logo.svg';
 
 interface LogoProps {
   height?: number | string;
