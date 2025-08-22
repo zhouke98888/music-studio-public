@@ -144,7 +144,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Logo height={32} />
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, ml: 1 }}>
             {user?.role === 'student' ? 'Student Portal' :
              user?.role === 'teacher' ? 'Teacher Portal' : 'Music Studio'}

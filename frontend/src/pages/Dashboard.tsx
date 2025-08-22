@@ -408,10 +408,10 @@ const Dashboard: React.FC = () => {
                   >
                     Schedule New Lesson
                   </Button>
-                  <Button variant="outlined" href="/students">
+                  <Button variant="outlined" component={Link} to="/students">
                     Manage Students
                   </Button>
-                  <Button variant="outlined" href="/invoices">
+                  <Button variant="outlined" component={Link} to="/invoices">
                     View Invoices
                   </Button>
                 </Box>
